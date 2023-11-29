@@ -1,5 +1,7 @@
 package client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,6 +14,7 @@ public class ClientInput implements Runnable{
     private BufferedReader input;
     private PrintWriter output;
     private Scanner scanner;
+    private ObjectMapper mapper;
 
 
     public ClientInput(Socket socket) throws IOException {
@@ -19,24 +22,25 @@ public class ClientInput implements Runnable{
         input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         output = new PrintWriter(socket.getOutputStream(), true);
         scanner = new Scanner(System.in);
+        mapper = new ObjectMapper();
     }
 
     private void handleUserInput() {
         while (true) {
-            String helpOptions = scanner.nextLine();
-            if (helpOptions.startsWith("login ")) {
-                String username = helpOptions.substring(6);
-                sendToServer("LOGIN {\"username\":\"" + username + "\"}");
-            } else if (helpOptions.startsWith("message ")) {
-                String message = helpOptions.substring(8);
-                sendToServer("BROADCAST_REQ {\"message\":\"" + message + "\"}");
-            } else if (helpOptions.equalsIgnoreCase("logout")) {
-                sendToServer("BYE");
+            String userInput = scanner.nextLine();
+            if (userInput.startsWith("login ")) {
+                String username = userInput.substring(6);
+                sendLoginRequest(username);
+            } else if (userInput.startsWith("message ")) {
+                String message = userInput.substring(8);
+                sendBroadcastRequest(message);
+            } else if (userInput.equalsIgnoreCase("logout")) {
+                sendLogoutRequest();
                 break;
-            } else if (helpOptions.equalsIgnoreCase("help")) {
+            } else if (userInput.equalsIgnoreCase("help")) {
                 showHelpMenu();
             } else {
-                System.out.println("This command is not valid, please type help to get the valid list of commands!");
+                System.out.println("Invalid command, please type 'help' for a list of commands.");
             }
         }
     }
@@ -47,20 +51,32 @@ public class ClientInput implements Runnable{
         System.out.println("<message> - Send a broadcast message");
         System.out.println("<logout> - Logout from the server");
     }
-    private void sendToServer(String message) {
-        output.println(message);
+    private void sendToServer(String command, ObjectNode node) {
+        if (node != null) {
+            String json = node.toString();
+            output.println(command + " " + json);
+        } else {
+            output.println(command);
+        }
+    }
+    private void sendLoginRequest(String username) {
+        ObjectNode loginNode = mapper.createObjectNode();
+        loginNode.put("username", username);
+        sendToServer("LOGIN", loginNode);
+    }
+
+    private void sendBroadcastRequest(String message) {
+        ObjectNode messageNode = mapper.createObjectNode();
+        messageNode.put("message", message);
+        sendToServer("BROADCAST_REQ", messageNode);
+    }
+
+    private void sendLogoutRequest() {
+        sendToServer("BYE", null);
     }
 
     @Override
     public void run() {
         handleUserInput();
-        try {
-            String clientResponse;
-            while ((clientResponse = input.readLine()).contains("BROADCAST")) {
-                System.out.println("Client: " + clientResponse);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
