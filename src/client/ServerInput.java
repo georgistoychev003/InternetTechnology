@@ -1,14 +1,16 @@
 package client;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class ServerInput implements Runnable{
+public class ServerInput implements Runnable {
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
@@ -45,8 +47,9 @@ public class ServerInput implements Runnable{
         String jsonPart = parts.length > 1 ? parts[1] : "";
         if (response.equals("PING")) {
             sendToServer("PONG");
-        }
-        if (!jsonPart.isEmpty()) {
+        } else if (command.equals("WELCOME")) {
+            System.out.println("Hey, you just established connection with the server!");
+        } else if (!jsonPart.isEmpty()) {
             JsonNode responseNode = mapper.readTree(jsonPart);
             if ("BROADCAST".equals(command) && responseNode.has("username") && responseNode.has("message")) {
                 String username = responseNode.get("username").asText();
@@ -54,6 +57,12 @@ public class ServerInput implements Runnable{
                 System.out.println("User \"" + username + "\" sent you a message: \"" + message + "\"");
             } else if ("LOGIN_RESP".equals(command) || "BYE_RESP".equals(command)) {
                 handleLoginLogoutResponse(command, responseNode);
+            } else if ("BROADCAST_RESP".equals(command)) {
+                handleBroadcastResponse(responseNode);
+
+            } else if ("LEFT".equals(command) && responseNode.has("username")) {
+                String username = responseNode.get("username").asText();
+                System.out.println("A user with username \"" + username + "\" just left the chat/disconnected.");
             } else {
                 System.out.println(command + " Response: " + jsonPart);
             }
@@ -64,16 +73,43 @@ public class ServerInput implements Runnable{
 
     private void handleLoginLogoutResponse(String command, JsonNode responseNode) {
         String status = responseNode.get("status").asText();
-        if ("OK".equals(status)) {
-            if ("LOGIN_RESP".equals(command)) {
+        if (status.equals("OK")) {
+            if (command.equals("LOGIN_RESP")) {
                 System.out.println("You just logged in successfully. Welcome!");
-            } else if ("BYE_RESP".equals(command)) {
-                System.out.println("You have successfully logged out. Bye do not come back!");
+            } else if (command.equals("BYE_RESP")) {
+                System.out.println("You have successfully logged out. Bye!");
             }
         } else {
-            System.out.println("Action failed: " + responseNode.get("code").asText());
+            int errorCode = responseNode.get("code").asInt();
+            switch (errorCode) {
+                case 5000:
+                    System.out.println("User with the given username is already logged in.");
+                    break;
+                case 5001:
+                    System.out.println("Sorry, the username you provided is of invalid format or length. Please try again with a different username.");
+                    break;
+                case 5002:
+                    System.out.println("A user cannot login twice. You can logout and try to log in again!");
+                    break;
+                default:
+                    System.out.println("Action failed with error code: " + errorCode);
+                    break;
+            }
         }
     }
+
+    private void handleBroadcastResponse(JsonNode responseNode) {
+        String status = responseNode.get("status").asText();
+        if (status.equals("ERROR")) {
+            int errorCode = responseNode.get("code").asInt();
+            if (errorCode == 6000) {
+                System.out.println("You tried to send a message without being logged in. Your message was not processed! Please log in and then try to send a broadcast message!");
+            }
+        } else {
+            System.out.println("Broadcast message sent successfully.");
+        }
+    }
+
     private void sendToServer(String message) {
         output.println(message);
     }
