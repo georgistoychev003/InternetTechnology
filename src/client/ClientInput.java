@@ -29,10 +29,13 @@ public class ClientInput implements Runnable{
         while (true) {
             String userInput = scanner.nextLine();
             if (userInput.startsWith("login ")) {
-                String username = userInput.substring(6);
+                // We subtract the command from the input
+                int beginIndex = "login ".length();
+                String username = userInput.substring(beginIndex);
                 sendLoginRequest(username);
             } else if (userInput.startsWith("message ")) {
-                String message = userInput.substring(8);
+                int beginIndex = "message ".length();
+                String message = userInput.substring(beginIndex);
                 sendBroadcastRequest(message);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
@@ -48,8 +51,8 @@ public class ClientInput implements Runnable{
     private void showHelpMenu() {
         System.out.println("Commands:");
         System.out.println("login <username> - Login to the server");
-        System.out.println("<message> - Send a broadcast message");
-        System.out.println("<logout> - Logout from the server");
+        System.out.println("message <message> - Send a broadcast message");
+        System.out.println("logout - Logout from the server");
     }
     private void sendToServer(String command, ObjectNode node) {
         if (node != null) {

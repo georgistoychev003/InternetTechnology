@@ -32,7 +32,7 @@ public class Client {
     }
 
 
-
+//TODO : ask if this method should exist
 //    private void closeSockets() {
 //        try {
 //            if (output != null) output.close();
