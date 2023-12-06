@@ -25,7 +25,7 @@ public class GlobalMessage extends Message{
     @Override
     public String toString() {
         if (responseType.equals("BROADCAST")){
-            return "User \"" + username + "\" sent you a message: \"" + message + "\"";
+            return "Global: " + username + " -> " + message;
         } else if (responseType.equals("LEFT")) {
             return  "A user with username \"" + username + "\" just left the chat/disconnected.";
         }
