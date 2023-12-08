@@ -75,6 +75,9 @@ public class ClientHandler implements Runnable {
                 case "CLIENT_LIST_REQ":
                     handleClientListRequest();
                     break;
+                case "PRIVATE_MESSAGE_REQ":
+                    handlePrivateMessageRequest(jsonPart);
+                    break;
                 default:
                     sendMessage("UNKNOWN_COMMAND", "{}");
                     break;
@@ -131,7 +134,7 @@ public class ClientHandler implements Runnable {
         // Remove the user from the list of logged-in users
         Server.removeLoggedInUser(username);
 
-        // Notify other clients that this user has left, excluding the user himself who joined
+        // Notify other clients that this user has left, excluding the user himself who left
         Server.broadcastMessage("LEFT", "{\"username\":\"" + username + "\"}", this.username);
 
         // Set running to false so the loop in the run method will terminate
@@ -211,6 +214,28 @@ public class ClientHandler implements Runnable {
         response.put("status", "OK");
         response.put("users", new JSONArray(usersArray));
         sendMessage("CLIENT_LIST_RESP", response.toString());
+    }
+
+    private void handlePrivateMessageRequest(String jsonPart) throws IOException {
+        if (username == null) {
+            // User is not logged in
+            sendMessage("PRIVATE_MESSAGE_RESP", "{\"status\":\"ERROR\", \"code\":6000}");
+            return;
+        }
+
+        JSONObject jsonObj = new JSONObject(jsonPart);
+        String chosenUsername = jsonObj.getString("username");
+        String privateMessage = jsonObj.getString("message");
+
+        ClientHandler privateMessageHandler = Server.getLoggedInUsers().get(chosenUsername);
+        if (privateMessageHandler != null) {
+            // User exists so we send the private message
+            privateMessageHandler.sendMessage("PRIVATE_MESSAGE", "{\"username\":\"" + this.username + "\",\"message\":\"" + privateMessage + "\"}");
+            sendMessage("PRIVATE_MESSAGE_RESP", "{\"status\":\"OK\"}");
+        } else {
+            // Target user not found
+            sendMessage("PRIVATE_MESSAGE_RESP", "{\"status\":\"ERROR\", \"code\":1000}");
+        }
     }
 
 

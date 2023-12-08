@@ -47,18 +47,24 @@ public class ServerInput implements Runnable {
         } else if (command.equals("WELCOME")) {
             System.out.println("Hey, you just established connection with the server! To get an overview of all possible commands type 'help' in the console!");
         } else {
-            if ("BROADCAST".equals(command)) {
+            if (command.equals("BROADCAST")) {
                 GlobalMessage globalMessage = new GlobalMessage(response);
                 System.out.println(globalMessage);
-            } else if ("LOGIN_RESP".equals(command) || "BYE_RESP".equals(command)) {
+            } else if (command.equals("LOGIN_RESP") || command.equals("BYE_RESP")) {
                 ResponseMessage responseMessage = new ResponseMessage(response);
                 System.out.println(responseMessage);
-            } else if ("BROADCAST_RESP".equals(command)) {
+            } else if (command.equals("JOINED")) {
+                GlobalMessage globalMessage = new GlobalMessage(response);
+                System.out.println(globalMessage);
+            } else if (command.equals("BROADCAST_RESP")) {
                 ResponseMessage responseMessage = new ResponseMessage(response);
                 System.out.println(responseMessage);
             } else if (command.equals("CLIENT_LIST_RESP")) {
                 handleClientListResponse(response);
-            } else if ("LEFT".equals(command)) {
+            } else if (command.equals("PRIVATE_MESSAGE")) {
+                GlobalMessage privateMessage = new GlobalMessage(response);
+                System.out.println(privateMessage);
+            } else if (command.equals("LEFT")) {
                 GlobalMessage globalMessage = new GlobalMessage(response);
                 System.out.println(globalMessage);
             } else {
@@ -67,14 +73,27 @@ public class ServerInput implements Runnable {
         }
     }
 
+
     private void handleClientListResponse(String response) {
         JsonNode node = Utility.getMessageContents(response);
-        if (node.get("status").asText().equals("OK")) {
-            System.out.println("Connected users: " + node.get("users").toString());
+        if ("OK".equals(node.get("status").asText())) {
+            JsonNode usersNode = node.get("users");
+            if (usersNode.isArray()) {
+                System.out.println("********** List Of Connected Clients **********");
+                for (JsonNode userNode : usersNode) {
+                    System.out.println("User with username: " + userNode.asText());
+                }
+            }
         } else {
-            System.out.println("Error: " + node.get("code").asText());
+            String errorCode = node.get("code").asText();
+            if ("6000".equals(errorCode)) {
+                System.out.println("Sorry, you are not logged in, thus you cannot request the list of connected clients. Login and try again.");
+            } else {
+                System.out.println("Error: " + errorCode);
+            }
         }
     }
+
 
     private void sendToServer(String message) {
         output.println(message);

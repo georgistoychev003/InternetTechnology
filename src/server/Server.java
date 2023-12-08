@@ -61,6 +61,10 @@ public class Server {
         });
     }
 
+    public static ClientHandler getClientHandlerByUsername(String username) {
+        return loggedInUsers.get(username);
+    }
+
 
     public static void main(String[] args) {
         Server server = new Server();

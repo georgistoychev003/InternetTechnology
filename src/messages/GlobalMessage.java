@@ -22,10 +22,18 @@ public class GlobalMessage extends Message{
         }
     }
 
+    public String getUsername() {
+        return username;
+    }
+
     @Override
     public String toString() {
         if (responseType.equals("BROADCAST")){
             return "Global: " + username + " -> " + message;
+        } else if (responseType.equals("PRIVATE_MESSAGE")) {
+            return "Private message from " + username + ": " + message;
+        } else if (responseType.equals("JOINED")) {
+            return "A user with username: " + username+ " just joined the chatroom";
         } else if (responseType.equals("LEFT")) {
             return  "A user with username \"" + username + "\" just left the chat/disconnected.";
         }

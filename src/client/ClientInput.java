@@ -35,6 +35,9 @@ public class ClientInput implements Runnable {
                handleMessageCommand(userInput);
             } else if (userInput.equalsIgnoreCase("list")) {
                 sendListRequest();
+
+            } else if (userInput.startsWith("private ")) {
+                handlePrivateMessageCommand(userInput);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
                 break;
@@ -60,12 +63,34 @@ public class ClientInput implements Runnable {
         sendBroadcastRequest(message);
     }
 
+    private void handlePrivateMessageCommand(String userInput) {
+        //split the input into three segments: the command ("private"), the target username, and the message itself
+        //this is what we expect according to our protocol
+        String[] parts = userInput.split(" ", 3);
+        if (parts.length < 3) {
+            System.out.println("Invalid command. Use: private <username> <message>");
+            return;
+        }
+        //extracting rhe desired username and message
+        String targetUsername = parts[1];
+        String message = parts[2];
+        sendPrivateMessageRequest(targetUsername, message);
+    }
+
+    private void sendPrivateMessageRequest(String username, String message) {
+        ObjectNode messageNode = mapper.createObjectNode();
+        messageNode.put("username", username);
+        messageNode.put("message", message);
+        sendToServer("PRIVATE_MESSAGE_REQ", messageNode);
+    }
+
 
     private void showHelpMenu() {
         System.out.println("Commands:");
         System.out.println("login <username> - Login to the server");
         System.out.println("list - Login to the server");
         System.out.println("message <message> - Send a broadcast message");
+        System.out.println("private <username> <message> - Send a private message");
         System.out.println("logout - Logout from the server");
     }
 
