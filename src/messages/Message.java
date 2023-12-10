@@ -1,6 +1,6 @@
 package messages;
 
-public abstract class Message {
+public class Message {
 
     private final String overallData;
 
@@ -10,5 +10,12 @@ public abstract class Message {
 
     public String getOverallData() {
         return overallData;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "overallData='" + overallData + '\'' +
+                '}';
     }
 }

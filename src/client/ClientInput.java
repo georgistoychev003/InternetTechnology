@@ -88,7 +88,7 @@ public class ClientInput implements Runnable {
     private void showHelpMenu() {
         System.out.println("Commands:");
         System.out.println("login <username> - Login to the server");
-        System.out.println("list - Login to the server");
+        System.out.println("list - Show logged in users");
         System.out.println("message <message> - Send a broadcast message");
         System.out.println("private <username> <message> - Send a private message");
         System.out.println("logout - Logout from the server");

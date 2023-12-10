@@ -1,5 +1,7 @@
 package server;
 
+import messages.Message;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,7 +11,7 @@ public class Server {
     private static final int PORT = 1337;
     private ServerSocket serverSocket;
     private static ConcurrentHashMap<String, ClientHandler> loggedInUsers = new ConcurrentHashMap<>();
-    public static final String VERSION = "1.5";  //ask gerralt if we really need a version
+    public static final String VERSION = "1.0";  //ask gerralt if we really need a version
 
     public void startServer() {
         try {
@@ -53,10 +55,10 @@ public class Server {
     }
 
 
-    public static void broadcastMessage(String command, String message, String senderUsername) {
+    public static void broadcastMessage(Message message, String senderUsername) {
         loggedInUsers.forEach((username, clientHandler) -> {
             if (!username.equals(senderUsername)) {
-                clientHandler.sendMessage(command, message);
+                clientHandler.sendMessage(message.getOverallData());
             }
         });
     }
