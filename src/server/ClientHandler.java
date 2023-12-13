@@ -88,6 +88,14 @@ public class ClientHandler implements Runnable {
                     Message privateMessageResponseToSend = clientFacade.handlePrivateMessageRequest(privateMessage);
                     sendMessage(privateMessageResponseToSend.getOverallData());
                     break;
+                case "GAME_CREATE_REQ":
+                    ResponseMessage gameCreateResponse = clientFacade.handleGameCreateRequest();
+                    sendMessage(gameCreateResponse.getOverallData());
+                    break;
+                case "GAME_JOIN_REQ":
+                    ResponseMessage joinResponse = clientFacade.handleGameJoinRequest(this.username);
+                    sendMessage(joinResponse.getOverallData());
+                    break;
                 default:
                     sendMessage("UNKNOWN_COMMAND", "{}");
                     break;

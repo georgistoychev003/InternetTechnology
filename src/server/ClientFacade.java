@@ -103,6 +103,25 @@ public class ClientFacade {
         }
     }
 
+    public ResponseMessage handleGameCreateRequest() {
+        GuessingGame game = GuessingGame.getInstance();
+        if (game.startGame(this.clientHandler)) {
+            Server.broadcastGameInvite(this.clientHandler.getUsername());
+            return new ResponseMessage("GAME_CREATE_RES {\"status\":\"OK\"}");
+        } else {
+            return new ResponseMessage("GAME_ERROR_RESP {\"status\":\"ERROR\", \"code\":9000}");
+        }
+    }
+
+    public ResponseMessage handleGameJoinRequest(String username) {
+        GuessingGame game = GuessingGame.getInstance();
+        if (game.isGameInProgress()) {
+            game.addParticipant(clientHandler); // Add client to participants
+            return new ResponseMessage("GAME_JOIN_RES {\"status\":\"OK\"}");
+        } else {
+            return new ResponseMessage("GAME_ERROR_RESP {\"status\":\"ERROR\", \"code\":9001}");
+        }
+    }
 
 
 }

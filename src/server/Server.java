@@ -1,5 +1,6 @@
 package server;
 
+import messages.GuessingGameInviteMessage;
 import messages.Message;
 
 import java.io.IOException;
@@ -62,6 +63,19 @@ public class Server {
             }
         });
     }
+
+
+    public static void broadcastGameInvite(String initiatorUsername) {
+        String inviteMessageData = String.format("{\"responseType\":\"GAME_INVITE\", \"user\":\"%s\"}", initiatorUsername);
+        GuessingGameInviteMessage inviteMessage = new GuessingGameInviteMessage(inviteMessageData);
+        loggedInUsers.forEach((username, clientHandler) -> {
+            if (!username.equals(initiatorUsername)) {
+                clientHandler.sendMessage(inviteMessage.getOverallData());
+            }
+        });
+    }
+
+
 
     public static ClientHandler getClientHandlerByUsername(String username) {
         return loggedInUsers.get(username);
