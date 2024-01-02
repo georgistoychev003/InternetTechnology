@@ -1,10 +1,15 @@
 package utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import messages.ResponseMessage;
+import org.json.JSONArray;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Utility {
     private static ObjectMapper mapper = new ObjectMapper();
@@ -25,6 +30,21 @@ public class Utility {
         }
 
         return node;
+    }
+
+    public static String extractParameterFromJson(String data, String param){
+        JsonNode jsonNode = getMessageContents(data);
+        return jsonNode.get(param).asText();
+    }
+
+    public static List<String> extractUserListFromJson(String data, String param){
+        JsonNode jsonNode = getMessageContents(data).get(param);
+        String usersString = jsonNode.asText();
+        try {
+            return mapper.readValue(usersString, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String getResponseType(String data){

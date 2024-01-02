@@ -8,17 +8,19 @@ public class JoinedMessage extends Message{
     private String responseType;
     private String username;
 
-    public JoinedMessage(String overallData) {
-        super(overallData);
-        determineMessageContents(overallData);
+    public JoinedMessage(String username) {
+        this.responseType = "JOINED";
+        this.username = username;
+        setOverallData(determineMessageContents());
     }
 
-    private void determineMessageContents(String overallData) {
-        JsonNode responseNode = Utility.getMessageContents(overallData);
-        responseType = responseNode.get("responseType").asText();
-        if (responseNode.has("username")){
-            username = responseNode.get("username").asText();
-        }
+    private String determineMessageContents() {
+        String overallData = responseType;
+        JsonNode node = getMapper().createObjectNode()
+                .put("username", username);
+
+        overallData += " " + node.toString();
+        return overallData;
     }
 
     public String getUsername() {

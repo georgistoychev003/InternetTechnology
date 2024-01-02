@@ -8,17 +8,19 @@ public class GuessingGameInviteMessage extends Message {
     private String responseType;
     private String username;
 
-    public GuessingGameInviteMessage(String overallData) {
-        super(overallData);
-        determineMessageContents(overallData);
+    public GuessingGameInviteMessage(String username) {
+        this.responseType = "GAME_INVITE";
+        this.username = username;
+        setOverallData(determineMessageContents());
     }
 
-    private void determineMessageContents(String overallData) {
-        JsonNode responseNode = Utility.getMessageContents(overallData);
-        responseType = responseNode.get("responseType").asText();
-        if (responseNode.has("user")) {
-            username = responseNode.get("user").asText();
-        }
+    private String determineMessageContents() {
+        String overallData = responseType;
+        JsonNode node = getMapper().createObjectNode()
+                .put("username", username);
+
+        overallData += " " + node.toString();
+        return overallData;
     }
 
     public String getUsername() {

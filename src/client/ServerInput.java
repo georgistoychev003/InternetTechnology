@@ -41,6 +41,8 @@ public class ServerInput implements Runnable {
 
     private void handleServerResponse(String response) throws IOException {
         String command = Utility.getResponseType(response);
+        String[] responseParts = response.split(" ", 2);
+        String body = (responseParts.length > 1) ? responseParts[1] : "";
         if (response.startsWith("PING")) {
             sendToServer("PONG");
         } else if (command.equals("WELCOME")) {
@@ -48,19 +50,32 @@ public class ServerInput implements Runnable {
         } else {
             switch (command) {
                 case "JOINED" -> {
-                    JoinedMessage joinedMessage = new JoinedMessage(response);
+                    String joinedUsername = Utility.extractParameterFromJson(response, "username");
+                    JoinedMessage joinedMessage = new JoinedMessage(joinedUsername);
                     System.out.println(MessageHandler.determineMessagePrintContents(joinedMessage));
                 }
                 case "LEFT" -> {
-                    LeftMessage leftMessage = new LeftMessage(response);
+                    String leftUsername = Utility.extractParameterFromJson(response, "username");
+                    LeftMessage leftMessage = new LeftMessage(leftUsername);
                     System.out.println(MessageHandler.determineMessagePrintContents(leftMessage));
                 }
                 case "BROADCAST" -> {
-                    GlobalMessage globalMessage = new GlobalMessage(response);
+                  //  String body = response.split(" ", 2)[1]; // FIXME: Dont do this for empty bodies
+                    ChatMessage message = mapper.readValue(body, ChatMessage.class);
+                    String broadcastUsername = Utility.extractParameterFromJson(response, "username");
+                    String broadcastMessage = Utility.extractParameterFromJson(response, "message");
+                    GlobalMessage globalMessage = new GlobalMessage(Utility.getResponseType(response), broadcastUsername, broadcastMessage);
                     System.out.println(MessageHandler.determineMessagePrintContents(globalMessage));
                 }
                 case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP" -> {
-                    ResponseMessage responseMessage = new ResponseMessage(response);
+                    String responseType = Utility.getResponseType(response);
+                    String status = Utility.extractParameterFromJson(response, "status");
+                    //If status is OK, the code is empty
+                    String code = "";
+                    if (!status.equals("OK")){
+                        code = Utility.extractParameterFromJson(response, "code");
+                    }
+                    ResponseMessage responseMessage = new ResponseMessage(responseType, status, code);
                     System.out.println(ResponseHandler.determineResponseMessagePrint(responseMessage));
                 }
                 case "CLIENT_LIST_RESP" -> {
@@ -68,7 +83,9 @@ public class ServerInput implements Runnable {
                     System.out.println(MessageHandler.handlePrintOfConnectedClients(message));
                 }
                 case "PRIVATE_MESSAGE" -> {
-                    PrivateMessage privateMessage = new PrivateMessage(response);
+                    String privateUsername = Utility.extractParameterFromJson(response, "username");
+                    String concreteMessage = Utility.extractParameterFromJson(response, "message");
+                    PrivateMessage privateMessage = new PrivateMessage(privateUsername, concreteMessage);
                     System.out.println(MessageHandler.determineMessagePrintContents(privateMessage));
                 }
                 default -> System.out.println(command + " Response: " + response);

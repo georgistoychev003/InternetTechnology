@@ -17,7 +17,6 @@ public class ClientInput implements Runnable {
     private Scanner scanner;
     private ObjectMapper mapper;
 
-
     public ClientInput(Socket socket) throws IOException {
         this.socket = socket;
         input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -78,6 +77,8 @@ public class ClientInput implements Runnable {
     }
 
     private void sendPrivateMessageRequest(String username, String message) {
+
+        //TODO: use message classes?
         ObjectNode messageNode = mapper.createObjectNode();
         messageNode.put("username", username);
         messageNode.put("message", message);

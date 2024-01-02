@@ -1,12 +1,20 @@
 package messages;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class Message {
 
-    private final String overallData;
+    private String overallData;
+    private ObjectMapper mapper = new ObjectMapper();
 
-    public Message(String overallData) {
-        this.overallData = overallData;
+    public Message() {
+        this.overallData = null;
     }
+
+    public Message(String oneliner) {
+        this.overallData = oneliner;
+    }
+
 
     public String getOverallData() {
         return overallData;
@@ -17,5 +25,13 @@ public class Message {
         return "Message{" +
                 "overallData='" + overallData + '\'' +
                 '}';
+    }
+
+    public void setOverallData(String overallData) {
+        this.overallData = overallData;
+    }
+
+    public ObjectMapper getMapper() {
+        return mapper;
     }
 }

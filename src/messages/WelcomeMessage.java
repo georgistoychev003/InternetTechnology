@@ -7,7 +7,7 @@ public class WelcomeMessage extends Message{
 
     private String msg;
     public WelcomeMessage(String overallData) {
-        super(overallData);
+       setOverallData(overallData);
         determineMessageBody(overallData);
     }
 

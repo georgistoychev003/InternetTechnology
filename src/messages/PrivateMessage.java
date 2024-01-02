@@ -7,18 +7,22 @@ public class PrivateMessage extends Message {
     private String responseType;
     private String username;
     private String message;
-    public PrivateMessage(String overallData) {
-        super(overallData);
-        determineMessageContents(overallData);
+    public PrivateMessage(String username, String message) {
+        this.responseType = "PRIVATE_MESSAGE";
+        this.username = username;
+        this.message = message;
+        setOverallData(determineMessageContents());
     }
 
-    private void determineMessageContents(String overallData) {
-        JsonNode responseNode = Utility.getMessageContents(overallData);
-        responseType = responseNode.get("responseType").asText();
-        username = responseNode.get("username").asText();
-        if (responseNode.has("message")){
-            message = responseNode.get("message").asText();
-        }
+    private String determineMessageContents() {
+        String overallData = responseType;
+        JsonNode node = getMapper().createObjectNode()
+                    .put("username", username)
+                    .put("message", message);
+
+
+        overallData += " " + node.toString();
+        return overallData;
     }
 
     public String getUsername() {

@@ -8,20 +8,23 @@ public class GlobalMessage extends Message{
     private String responseType;
     private String username;
     private String message;
-    public GlobalMessage(String overallData) {
-        super(overallData);
-        determineMessageContents(overallData);
+    public GlobalMessage(String responseType,String username, String message) {
+        this.responseType = responseType;
+        this.username = username;
+        this.message = message;
+        setOverallData(determineMessageContents());
     }
 
-    private void determineMessageContents(String overallData) {
-        JsonNode responseNode = Utility.getMessageContents(overallData);
-        responseType = responseNode.get("responseType").asText();
-        if (responseNode.has("username")){
-            username = responseNode.get("username").asText();
-        }
-        if (responseNode.has("message")){
-            message = responseNode.get("message").asText();
-        }
+
+    private String determineMessageContents() {
+        String overallData = responseType;
+        JsonNode node = getMapper().createObjectNode()
+                .put("username", username)
+                .put("message", message);
+
+
+        overallData += " " + node.toString();
+        return overallData;
     }
 
     public String getUsername() {

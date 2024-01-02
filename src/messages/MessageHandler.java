@@ -3,6 +3,8 @@ package messages;
 import com.fasterxml.jackson.databind.JsonNode;
 import utils.Utility;
 
+import java.util.List;
+
 public class MessageHandler {
 
     public static String determineMessagePrintContents(Message message) {
@@ -21,22 +23,25 @@ public class MessageHandler {
     }
 
     public static Message handleConnectedClientsResponseStatus(String response) {
-        String responseStatus = Utility.getMessageContents(response).get("status").asText();
+        String responseStatus = Utility.extractParameterFromJson(response, "status");
         if (responseStatus.equals("OK")){
-            return new ClientListMessage(response);
+            List<String> users = Utility.extractUserListFromJson(response, "users");
+            return new ClientListMessage(responseStatus, users);
         } else {
-            return new ResponseMessage(response);
+            String responseType = Utility.getResponseType(response);
+            String code = Utility.extractParameterFromJson(response, "code");
+            return new ResponseMessage(responseType, responseStatus, code);
         }
     }
 
     public static String handlePrintOfConnectedClients(Message message){
         StringBuilder sb = new StringBuilder();
         if (message instanceof ClientListMessage){
-            JsonNode users = ((ClientListMessage) message).getUsers();
-            if (users.isArray()) {
+            List<String> users = ((ClientListMessage) message).getUsers();
+            if (!users.isEmpty()) {
                 sb.append("********** List Of Connected Clients **********");
-                for (JsonNode userNode : users) {
-                    sb.append("\n-->>: ").append(userNode.asText());
+                for (String name : users) {
+                    sb.append("\n-->>: ").append(name);
                 }
             } else {
                 sb.append("Error: Invalid or missing user information in the response.");

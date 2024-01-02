@@ -1,18 +1,16 @@
 package server;
 
-public class ClientInputManager {
+public class ServerStateManager {
 
+    private static ServerStateManager instance;
 
-
-    private static ClientInputManager instance;
-
-    private ClientInputManager() {
+    private ServerStateManager() {
 
     }
 
-    public static ClientInputManager getInstance(){
+    public static ServerStateManager getInstance(){
         if (instance == null){
-            instance = new ClientInputManager();
+            instance = new ServerStateManager();
         }
         return instance;
     }

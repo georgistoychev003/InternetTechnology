@@ -1,6 +1,7 @@
 package messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import utils.Utility;
 
 public class ResponseMessage extends Message{
@@ -8,18 +9,31 @@ public class ResponseMessage extends Message{
     private String responseType;
     private String status;
     private String code;
-    public ResponseMessage(String overallData) {
-        super(overallData);
-        determineMessageContents(overallData);
+
+    public ResponseMessage(String responseType, String status, String code) {
+        this.responseType = responseType;
+        this.status = status;
+        this.code = code;
+        setOverallData(determineMessageContents(responseType, status, code));
+    }
+    public ResponseMessage(String responseType, String status) {
+        this(responseType, status, "");
     }
 
-    private void determineMessageContents(String overallData) {
-        JsonNode responseNode = Utility.getMessageContents(overallData);
-        responseType = responseNode.get("responseType").asText();
-        status = responseNode.get("status").asText();
-        if (responseNode.has("code")){
-            code = responseNode.get("code").asText();
+    private String determineMessageContents(String responseType, String status, String code) {
+        String overallData = responseType;
+        JsonNode node;
+        if (code.isBlank() || code.isEmpty() || status.equals("OK")){
+            node = getMapper().createObjectNode()
+                    .put("status", status);
+        } else {
+            node = getMapper().createObjectNode()
+                    .put("status", status)
+                    .put("code", code);
         }
+
+        overallData += " " + node.toString();
+        return overallData;
     }
 
     public String getResponseType() {

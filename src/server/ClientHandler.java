@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import messages.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -18,9 +19,7 @@ public class ClientHandler implements Runnable {
     private AtomicBoolean running;
     private AtomicBoolean receivedPong = new AtomicBoolean(false);
     private ClientFacade clientFacade =new ClientFacade(this);
-
     private String username;
-
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -59,13 +58,16 @@ public class ClientHandler implements Runnable {
 
             switch (command) {
                 case "LOGIN":
-                    LoginMessage loginMessage = new LoginMessage(message);
+                    String loginUsername = Utility.extractParameterFromJson(message, "username");
+                    LoginMessage loginMessage = new LoginMessage(loginUsername);
                     ResponseMessage loginMessageToSend = clientFacade.handleLogin(loginMessage);
                     sendMessage(loginMessageToSend.getOverallData());
                     break;
                 case "BROADCAST_REQ":
-                    GlobalMessage broadcastMessage = new GlobalMessage(message);
-                    ResponseMessage broadcastResponseToSend = clientFacade.handleBroadcastRequest(broadcastMessage);
+                    String broadcastUsername = Utility.extractParameterFromJson(message, "username");
+                    String broadcastMessage = Utility.extractParameterFromJson(message, "message");
+                    GlobalMessage globalMessage = new GlobalMessage(Utility.getResponseType(message), broadcastUsername, broadcastMessage);
+                    ResponseMessage broadcastResponseToSend = clientFacade.handleBroadcastRequest(globalMessage);
                     sendMessage(broadcastResponseToSend.getOverallData());
                     break;
                 case "BYE":
@@ -84,7 +86,9 @@ public class ClientHandler implements Runnable {
                     sendMessage(listRequestMessageToSend.getOverallData());
                     break;
                 case "PRIVATE_MESSAGE_REQ":
-                    PrivateMessage privateMessage = new PrivateMessage(message);
+                    String privateUsername = Utility.extractParameterFromJson(message, "username");
+                    String concreteMessage = Utility.extractParameterFromJson(message, "message");
+                    PrivateMessage privateMessage = new PrivateMessage(privateUsername, concreteMessage);
                     Message privateMessageResponseToSend = clientFacade.handlePrivateMessageRequest(privateMessage);
                     sendMessage(privateMessageResponseToSend.getOverallData());
                     break;
@@ -97,7 +101,7 @@ public class ClientHandler implements Runnable {
                     sendMessage(joinResponse.getOverallData());
                     break;
                 default:
-                    sendMessage("UNKNOWN_COMMAND", "{}");
+                    sendMessage("UNKNOWN_COMMAND");
                     break;
             }
         } catch (Exception e) {
@@ -125,13 +129,13 @@ public class ClientHandler implements Runnable {
                 while (running.get()) {
                     Thread.sleep(10000); // Send ping every 10 seconds
                     receivedPong.set(false); // Reset the pong
-                    Message pingMessage = new Message("PING \"{}\"");
+                    Message pingMessage = new Message("PING");
                     sendMessage(pingMessage.getOverallData());
 
                     // Wait for 3 seconds for PONG response
                     Thread.sleep(3000);
                     if (!receivedPong.get()) {
-                        DisconnectMessage disconnectMessage = new DisconnectMessage("DSCN {\"reason\": 7000}");
+                        DisconnectMessage disconnectMessage = new DisconnectMessage("7000");
                         sendMessage(disconnectMessage.getOverallData());
                         closeConnection();
                         break;
@@ -142,7 +146,6 @@ public class ClientHandler implements Runnable {
             }
         }).start();
     }
-
 
     protected void sendMessage(String command, String message) {
         System.out.println("Partial message:" + command + " " + message);
@@ -173,7 +176,6 @@ public class ClientHandler implements Runnable {
             closeConnection();
         }
     }
-
 
     private void closeConnection() {
         try {
