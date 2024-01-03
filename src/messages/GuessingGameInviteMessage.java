@@ -7,6 +7,9 @@ public class GuessingGameInviteMessage extends Message {
 
     private String responseType;
     private String username;
+    public GuessingGameInviteMessage() {
+
+    }
 
     public GuessingGameInviteMessage(String username) {
         this.responseType = "GAME_INVITE";
@@ -25,5 +28,9 @@ public class GuessingGameInviteMessage extends Message {
 
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

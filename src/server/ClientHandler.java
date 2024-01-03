@@ -53,6 +53,7 @@ public class ClientHandler implements Runnable {
 
 
     private void processClientMessage(String message)  {
+        System.out.println(message);
         try {
             String command = Utility.getResponseType(message);
 
@@ -95,6 +96,10 @@ public class ClientHandler implements Runnable {
                 case "GAME_CREATE_REQ":
                     ResponseMessage gameCreateResponse = clientFacade.handleGameCreateRequest();
                     sendMessage(gameCreateResponse.getOverallData());
+                    if (gameCreateResponse.getResponseType().equals("OK")){
+                        ResponseMessage gameStartResponse = clientFacade.handleGameStart();
+                        sendMessage(gameStartResponse.getOverallData());
+                    }
                     break;
                 case "GAME_JOIN_REQ":
                     ResponseMessage joinResponse = clientFacade.handleGameJoinRequest(this.username);

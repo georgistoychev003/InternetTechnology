@@ -6,6 +6,9 @@ import utils.Utility;
 public class WelcomeMessage extends Message{
 
     private String msg;
+    public WelcomeMessage() {
+
+    }
     public WelcomeMessage(String overallData) {
        setOverallData(overallData);
         determineMessageBody(overallData);
@@ -16,5 +19,9 @@ public class WelcomeMessage extends Message{
         if (jsonNode.has("msg")){
             msg = jsonNode.get("msg").asText();
         }
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
     }
 }

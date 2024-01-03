@@ -37,6 +37,8 @@ public class ClientInput implements Runnable {
 
             } else if (userInput.startsWith("private ")) {
                 handlePrivateMessageCommand(userInput);
+            } else if (userInput.startsWith("gamecreate")) {
+                handleGameCreation();
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
                 break;
@@ -47,7 +49,6 @@ public class ClientInput implements Runnable {
             }
         }
     }
-
 
 
     private void handleLoginCommand(String userInput) {
@@ -86,12 +87,17 @@ public class ClientInput implements Runnable {
     }
 
 
+    private void handleGameCreation() {
+        sendToServer("GAME_CREATE_REQ", null);
+    }
+
     private void showHelpMenu() {
         System.out.println("Commands:");
         System.out.println("login <username> - Login to the server");
         System.out.println("list - Show logged in users");
         System.out.println("message <message> - Send a broadcast message");
         System.out.println("private <username> <message> - Send a private message");
+        System.out.println("gamecreate - Creates a number guessing game");
         System.out.println("logout - Logout from the server");
     }
 

@@ -5,9 +5,12 @@ import utils.Utility;
 
 public class LoginMessage extends Message{
 
-    private String responseType;
+    private String responseType = "LOGIN";
     private String username;
 
+    public LoginMessage() {
+
+    }
     public LoginMessage(String username) {
         this.responseType = "LOGIN";
         this.username = username;
@@ -25,5 +28,9 @@ public class LoginMessage extends Message{
 
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

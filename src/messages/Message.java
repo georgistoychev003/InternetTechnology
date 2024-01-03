@@ -8,7 +8,7 @@ public class Message {
     private ObjectMapper mapper = new ObjectMapper();
 
     public Message() {
-        this.overallData = null;
+
     }
 
     public Message(String oneliner) {

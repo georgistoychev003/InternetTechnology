@@ -9,6 +9,7 @@ public class ResponseHandler {
                 case "BYE_RESP" -> "You have successfully logged out. Bye do not come back!";
                 case "BROADCAST_RESP" -> "Broadcast message sent successfully.";
                 case "PRIVATE_MESSAGE_RESP" -> "Private message sent successfully.";
+                case "GAME_CREATE_RES" -> "Game lobby created successfully. Starting game in 10 seconds.";
                 default -> "error";
             };
         } else {

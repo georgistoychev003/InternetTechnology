@@ -6,6 +6,10 @@ import utils.Utility;
 public class DisconnectMessage extends Message{
     private String responseType;
     private String reason;
+
+    public DisconnectMessage() {
+
+    }
     public DisconnectMessage(String reason) {
         this.responseType = "DSCN";
         this.reason = reason;
@@ -21,5 +25,7 @@ public class DisconnectMessage extends Message{
         return overallData;
     }
 
-
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
 }

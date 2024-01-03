@@ -8,6 +8,10 @@ public class GlobalMessage extends Message{
     private String responseType;
     private String username;
     private String message;
+
+    public GlobalMessage() {
+
+    }
     public GlobalMessage(String responseType,String username, String message) {
         this.responseType = responseType;
         this.username = username;
@@ -35,4 +39,11 @@ public class GlobalMessage extends Message{
         return message;
     }
 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }

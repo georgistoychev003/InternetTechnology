@@ -26,6 +26,7 @@ public class ClientFacade {
 
             // Broadcast to all users that a new user has joined
             JoinedMessage joinedMessage = new JoinedMessage(attemptedUsername);
+            System.out.println("Joined mess: " + joinedMessage.getOverallData());
             Server.broadcastMessage(joinedMessage, attemptedUsername);
 
             //Return message that needs to be sent
@@ -91,12 +92,16 @@ public class ClientFacade {
 
     public ResponseMessage handleGameCreateRequest() {
         GuessingGame game = GuessingGame.getInstance();
-        if (game.startGame(this.clientHandler)) {
+        ResponseMessage responseMessage = game.createGame(this.clientHandler);
+        if (responseMessage.getStatus().equals("OK")){
             Server.broadcastGameInvite(this.clientHandler.getUsername());
-            return new ResponseMessage("GAME_CREATE_RES", "OK");
-        } else {
-            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9000");
         }
+        return responseMessage;
+    }
+
+    public ResponseMessage handleGameStart() {
+        GuessingGame game = GuessingGame.getInstance();
+        return game.startGame(this.clientHandler);
     }
 
     public ResponseMessage handleGameJoinRequest(String username) {
@@ -108,6 +113,5 @@ public class ClientFacade {
             return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9001");
         }
     }
-
 
 }

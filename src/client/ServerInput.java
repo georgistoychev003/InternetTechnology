@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class ServerInput implements Runnable {
     private Socket socket;
@@ -52,22 +53,25 @@ public class ServerInput implements Runnable {
                 case "JOINED" -> {
                     String joinedUsername = Utility.extractParameterFromJson(response, "username");
                     JoinedMessage joinedMessage = new JoinedMessage(joinedUsername);
+//                    JoinedMessage joinedMessage = mapper.readValue(body, JoinedMessage.class);
                     System.out.println(MessageHandler.determineMessagePrintContents(joinedMessage));
                 }
                 case "LEFT" -> {
                     String leftUsername = Utility.extractParameterFromJson(response, "username");
                     LeftMessage leftMessage = new LeftMessage(leftUsername);
+//                    LeftMessage leftMessage = mapper.readValue(body, LeftMessage.class);
                     System.out.println(MessageHandler.determineMessagePrintContents(leftMessage));
                 }
                 case "BROADCAST" -> {
                   //  String body = response.split(" ", 2)[1]; // FIXME: Dont do this for empty bodies
-                    ChatMessage message = mapper.readValue(body, ChatMessage.class);
+//                    ChatMessage message = mapper.readValue(body, ChatMessage.class);
                     String broadcastUsername = Utility.extractParameterFromJson(response, "username");
                     String broadcastMessage = Utility.extractParameterFromJson(response, "message");
                     GlobalMessage globalMessage = new GlobalMessage(Utility.getResponseType(response), broadcastUsername, broadcastMessage);
+//                    GlobalMessage globalMessage = mapper.readValue(body, GlobalMessage.class);
                     System.out.println(MessageHandler.determineMessagePrintContents(globalMessage));
                 }
-                case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP" -> {
+                case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP", "GAME_CREATE_RES" -> {
                     String responseType = Utility.getResponseType(response);
                     String status = Utility.extractParameterFromJson(response, "status");
                     //If status is OK, the code is empty
@@ -76,6 +80,8 @@ public class ServerInput implements Runnable {
                         code = Utility.extractParameterFromJson(response, "code");
                     }
                     ResponseMessage responseMessage = new ResponseMessage(responseType, status, code);
+//                    ResponseMessage responseMessage = mapper.readValue(body, ResponseMessage.class);
+//                    responseMessage.setResponseType(responseType);
                     System.out.println(ResponseHandler.determineResponseMessagePrint(responseMessage));
                 }
                 case "CLIENT_LIST_RESP" -> {
@@ -86,7 +92,13 @@ public class ServerInput implements Runnable {
                     String privateUsername = Utility.extractParameterFromJson(response, "username");
                     String concreteMessage = Utility.extractParameterFromJson(response, "message");
                     PrivateMessage privateMessage = new PrivateMessage(privateUsername, concreteMessage);
+//                    PrivateMessage privateMessage = mapper.readValue(body, PrivateMessage.class);
                     System.out.println(MessageHandler.determineMessagePrintContents(privateMessage));
+                }
+                case "GAME_INVITE" -> {
+                    String gameInitiator = Utility.extractParameterFromJson(response, "username");
+                    GuessingGameInviteMessage gameInviteMessage = new GuessingGameInviteMessage(gameInitiator);
+                    System.out.println(MessageHandler.determineMessagePrintContents(gameInviteMessage));
                 }
                 default -> System.out.println(command + " Response: " + response);
             }

@@ -7,6 +7,10 @@ public class PrivateMessage extends Message {
     private String responseType;
     private String username;
     private String message;
+
+    public PrivateMessage() {
+
+    }
     public PrivateMessage(String username, String message) {
         this.responseType = "PRIVATE_MESSAGE";
         this.username = username;
@@ -33,4 +37,11 @@ public class PrivateMessage extends Message {
         return message;
     }
 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }

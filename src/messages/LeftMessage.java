@@ -8,6 +8,9 @@ public class LeftMessage extends Message{
     private String responseType;
     private String username;
 
+    public LeftMessage() {
+
+    }
     public LeftMessage(String username) {
         this.responseType = "LEFT";
         this.username = username;
@@ -25,5 +28,9 @@ public class LeftMessage extends Message{
 
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

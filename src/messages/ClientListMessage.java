@@ -13,6 +13,10 @@ public class ClientListMessage extends Message{
     private String responseType;
     private String status;
     private List<String> users;
+
+    public ClientListMessage() {
+
+    }
     public ClientListMessage(String status, List<String> users) {
         this.responseType = "CLIENT_LIST_RESP";
         this.status = status;
@@ -40,5 +44,13 @@ public class ClientListMessage extends Message{
 
     public List<String> getUsers() {
         return users;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void setUsers(List<String> users) {
+        this.users = users;
     }
 }

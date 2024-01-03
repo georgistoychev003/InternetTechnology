@@ -10,6 +10,10 @@ public class ResponseMessage extends Message{
     private String status;
     private String code;
 
+    public ResponseMessage() {
+
+    }
+
     public ResponseMessage(String responseType, String status, String code) {
         this.responseType = responseType;
         this.status = status;
@@ -40,6 +44,11 @@ public class ResponseMessage extends Message{
         return responseType;
     }
 
+    public void setResponseType(String responseType) {
+        this.responseType = responseType;
+//        setOverallData(determineMessageContents(responseType, status, code));
+    }
+
     public String getStatus() {
         return status;
     }
@@ -48,4 +57,11 @@ public class ResponseMessage extends Message{
         return code;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
 }

@@ -1,14 +1,20 @@
 package messages;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import utils.Utility;
 
 public class JoinedMessage extends Message{
 
-    private String responseType;
+    private String responseType = "JOINED";
     private String username;
 
-    public JoinedMessage(String username) {
+
+    public JoinedMessage() {
+    }
+    @JsonCreator
+    public JoinedMessage(@JsonProperty("username")String username) {
         this.responseType = "JOINED";
         this.username = username;
         setOverallData(determineMessageContents());
@@ -25,5 +31,9 @@ public class JoinedMessage extends Message{
 
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }
