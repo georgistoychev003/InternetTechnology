@@ -1,22 +1,26 @@
 package server;
 
+import messages.GameGuessMessage;
+import messages.GameGuessResponseMessage;
 import messages.Message;
 import messages.ResponseMessage;
 
 import java.util.Random;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class GuessingGame {
+public class GuessingGame implements Runnable {
     private static GuessingGame instance = null;
     private boolean gameInitiated;
     private int secretRandomNumber;
+    private int minNumber = 1;
+    private int maxNumber = 50;
     private ConcurrentHashMap<String, ClientHandler> participants;
-    private final ScheduledExecutorService executorService;
+    private final ReentrantLock lock = new ReentrantLock();
 
     private GuessingGame() {
         this.gameInitiated = false;
         this.participants = new ConcurrentHashMap<>();
-        this.executorService = Executors.newSingleThreadScheduledExecutor();
     }
 
     public void addParticipant(ClientHandler participant) {
@@ -34,6 +38,7 @@ public class GuessingGame {
     public static GuessingGame getInstance() {
         if (instance == null) {
             instance = new GuessingGame();
+            new Thread(instance).start();
         }
         return instance;
     }
@@ -43,34 +48,71 @@ public class GuessingGame {
             gameInitiated = true;
             participants.clear();
             participants.put(initiator.getUsername(), initiator);
-            return new ResponseMessage("GAME_CREATE_RES", "OK");
+            return new ResponseMessage("GAME_CREATE_RESP", "OK");
         }
         return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9000");
     }
     public ResponseMessage startGame(ClientHandler initiator) {
-        if (!gameInitiated) {
-            CountDownLatch countDownLatch = new CountDownLatch(1);
-
+        System.out.println("is initiated: " + gameInitiated);
+        if (gameInitiated) {
+            lock.lock();
             try {
-                countDownLatch.await(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+                CountDownLatch countDownLatch = new CountDownLatch(1);
 
-            if (participants.size() > 1) {
-                secretRandomNumber = new Random().nextInt(50) + 1;
-                return new ResponseMessage("GAME_START_RES", "OK");
-            } else {
-                endGame();
-                return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9001");
+                try {
+                    countDownLatch.await(10, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                if (participants.size() > 1) {
+                    secretRandomNumber = new Random().nextInt(maxNumber + 1);
+                    return new ResponseMessage("GAME_START_RESP", "OK");
+                } else {
+                    endGame();
+                    return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9001");
+                }
+            } finally {
+                lock.unlock();
             }
         }
-        return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9000");
+        return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9009");
+    }
+
+    public Message checkGuess(String guess) {
+        int number;
+        try {
+            number = Integer.parseInt(guess);
+        } catch (IllegalArgumentException ex) {
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9002");
+        }
+
+
+        if (number > maxNumber || number < minNumber) {
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9003");
+        }
+
+        if (number > secretRandomNumber) {
+            return new GameGuessResponseMessage("1");
+        } else if (number < secretRandomNumber) {
+            return new GameGuessResponseMessage("-1");
+        } else {
+            return new GameGuessResponseMessage("0");
+        }
     }
 
 
     public void endGame() {
         gameInitiated = false;
         participants.clear();
+    }
+
+    public ConcurrentHashMap<String, ClientHandler> getParticipants() {
+        return participants;
+    }
+
+    @Override
+    public void run() {
+
     }
 }

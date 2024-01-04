@@ -1,5 +1,7 @@
 package server;
 
+import messages.GuessingGameInviteMessage;
+
 public class ServerStateManager {
 
     private static ServerStateManager instance;
@@ -33,4 +35,6 @@ public class ServerStateManager {
         }
         return "5002"; // User cannot login twice
     }
+
+
 }

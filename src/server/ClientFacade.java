@@ -2,6 +2,7 @@ package server;
 
 import messages.*;
 import org.json.JSONArray;
+import utils.Utility;
 
 import java.util.List;
 
@@ -91,7 +92,7 @@ public class ClientFacade {
     }
 
     public ResponseMessage handleGameCreateRequest() {
-        GuessingGame game = GuessingGame.getInstance();
+        GuessingGame game = getGuessingGame();
         ResponseMessage responseMessage = game.createGame(this.clientHandler);
         if (responseMessage.getStatus().equals("OK")){
             Server.broadcastGameInvite(this.clientHandler.getUsername());
@@ -100,18 +101,27 @@ public class ClientFacade {
     }
 
     public ResponseMessage handleGameStart() {
-        GuessingGame game = GuessingGame.getInstance();
-        return game.startGame(this.clientHandler);
+        System.out.println("Currently in handleGameStart method");
+        ResponseMessage startResponse = getGuessingGame().startGame(this.clientHandler);
+        Server.broadcastGameStart(this.clientHandler.getUsername(), getGuessingGame(), startResponse);
+        return startResponse;
     }
 
     public ResponseMessage handleGameJoinRequest(String username) {
-        GuessingGame game = GuessingGame.getInstance();
-        if (game.isGameInProgress()) {
-            game.addParticipant(clientHandler); // Add client to participants
-            return new ResponseMessage("GAME_JOIN_RES", "OK");
+        if (getGuessingGame().isGameInProgress()) {
+            getGuessingGame().addParticipant(clientHandler); // Add client to participants
+            return new ResponseMessage("GAME_JOIN_RESP", "OK");
         } else {
             return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9001");
         }
     }
 
+    public Message handleGameGuess(String message) {
+        String number = Utility.extractParameterFromJson(message, "number");
+        return getGuessingGame().checkGuess(number);
+    }
+
+    private GuessingGame getGuessingGame() {
+        return GuessingGame.getInstance();
+    }
 }

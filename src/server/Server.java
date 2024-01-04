@@ -2,6 +2,7 @@ package server;
 
 import messages.GuessingGameInviteMessage;
 import messages.Message;
+import messages.ResponseMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -74,6 +75,14 @@ public class Server {
         });
     }
 
+
+    public static void broadcastGameStart(String initiatorUsername, GuessingGame game, ResponseMessage message){
+        game.getParticipants().forEach((username, clientHandler) -> {
+            if (!username.equals(initiatorUsername)) {
+                clientHandler.sendMessage(message.getOverallData());
+            }
+        });
+    }
 
 
     public static ClientHandler getClientHandlerByUsername(String username) {

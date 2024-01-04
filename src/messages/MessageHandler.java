@@ -18,8 +18,20 @@ public class MessageHandler {
             return "Private: " + ((PrivateMessage) message).getUsername() + "-> " + ((PrivateMessage) message).getMessage();
         } else if (message instanceof GuessingGameInviteMessage) {
             return "Game Invite: " + ((GuessingGameInviteMessage) message).getUsername() + " has invited you to join the guessing game.";
+        } else if (message instanceof GameGuessResponseMessage) {
+            return determineGuessStatus((GameGuessResponseMessage) message);
         }
         return "error";
+    }
+
+    private static String determineGuessStatus(GameGuessResponseMessage message) {
+        if (message.getNumber().equals("1")){
+            return "The secret number is lower than your guess";
+        } else if (message.getNumber().equals("-1")) {
+            return "The secret number is higher than your guess";
+        } else {
+            return "You guessed the secret number";
+        }
     }
 
     public static Message handleConnectedClientsResponseStatus(String response) {

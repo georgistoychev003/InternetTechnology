@@ -96,7 +96,7 @@ public class ClientHandler implements Runnable {
                 case "GAME_CREATE_REQ":
                     ResponseMessage gameCreateResponse = clientFacade.handleGameCreateRequest();
                     sendMessage(gameCreateResponse.getOverallData());
-                    if (gameCreateResponse.getResponseType().equals("OK")){
+                    if (gameCreateResponse.getStatus().equals("OK")){
                         ResponseMessage gameStartResponse = clientFacade.handleGameStart();
                         sendMessage(gameStartResponse.getOverallData());
                     }
@@ -105,7 +105,12 @@ public class ClientHandler implements Runnable {
                     ResponseMessage joinResponse = clientFacade.handleGameJoinRequest(this.username);
                     sendMessage(joinResponse.getOverallData());
                     break;
+                case "GUESS_NUMBER":
+                    Message guessMessage = clientFacade.handleGameGuess(message);
+                    sendMessage(guessMessage.getOverallData());
+                    break;
                 default:
+                    System.out.println(message);
                     sendMessage("UNKNOWN_COMMAND");
                     break;
             }
@@ -138,7 +143,7 @@ public class ClientHandler implements Runnable {
                     sendMessage(pingMessage.getOverallData());
 
                     // Wait for 3 seconds for PONG response
-                    Thread.sleep(3000);
+                    Thread.sleep(10000);
                     if (!receivedPong.get()) {
                         DisconnectMessage disconnectMessage = new DisconnectMessage("7000");
                         sendMessage(disconnectMessage.getOverallData());

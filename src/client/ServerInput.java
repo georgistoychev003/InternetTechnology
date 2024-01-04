@@ -71,7 +71,8 @@ public class ServerInput implements Runnable {
 //                    GlobalMessage globalMessage = mapper.readValue(body, GlobalMessage.class);
                     System.out.println(MessageHandler.determineMessagePrintContents(globalMessage));
                 }
-                case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP", "GAME_CREATE_RES" -> {
+                case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP", "GAME_CREATE_RESP",
+                        "GAME_START_RESP", "GAME_JOIN_RESP" -> {
                     String responseType = Utility.getResponseType(response);
                     String status = Utility.extractParameterFromJson(response, "status");
                     //If status is OK, the code is empty
@@ -99,6 +100,11 @@ public class ServerInput implements Runnable {
                     String gameInitiator = Utility.extractParameterFromJson(response, "username");
                     GuessingGameInviteMessage gameInviteMessage = new GuessingGameInviteMessage(gameInitiator);
                     System.out.println(MessageHandler.determineMessagePrintContents(gameInviteMessage));
+                }
+                case "GUESS_RESP" -> {
+                    String gameGuessResponse = Utility.extractParameterFromJson(response, "number");
+                    GameGuessResponseMessage guessResponseMessage = new GameGuessResponseMessage(gameGuessResponse);
+                    System.out.println(MessageHandler.determineMessagePrintContents(guessResponseMessage));
                 }
                 default -> System.out.println(command + " Response: " + response);
             }

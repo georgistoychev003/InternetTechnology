@@ -2,6 +2,7 @@ package client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import messages.GameGuessMessage;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,8 +38,12 @@ public class ClientInput implements Runnable {
 
             } else if (userInput.startsWith("private ")) {
                 handlePrivateMessageCommand(userInput);
-            } else if (userInput.startsWith("gamecreate")) {
+            } else if (userInput.startsWith("game create")) {
                 handleGameCreation();
+            } else if (userInput.startsWith("game join")) {
+                handleGameJoin();
+            } else if (userInput.startsWith("game guess ")) {
+                handleGameGuess(userInput);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
                 break;
@@ -91,13 +96,26 @@ public class ClientInput implements Runnable {
         sendToServer("GAME_CREATE_REQ", null);
     }
 
+    private void handleGameJoin() {
+        sendToServer("GAME_JOIN_REQ", null);
+    }
+
+    private void handleGameGuess(String input) {
+        String[] parts = input.split(" ", 3);
+        String number = parts[2];
+        GameGuessMessage gameGuessMessage = new GameGuessMessage(number);
+        sendToServer(gameGuessMessage.getOverallData());
+
+    }
+
     private void showHelpMenu() {
         System.out.println("Commands:");
         System.out.println("login <username> - Login to the server");
         System.out.println("list - Show logged in users");
         System.out.println("message <message> - Send a broadcast message");
         System.out.println("private <username> <message> - Send a private message");
-        System.out.println("gamecreate - Creates a number guessing game");
+        System.out.println("game create - Creates a number guessing game");
+        System.out.println("game join - Join the number guessing game");
         System.out.println("logout - Logout from the server");
     }
 
@@ -108,6 +126,10 @@ public class ClientInput implements Runnable {
         } else {
             output.println(command);
         }
+    }
+
+    private void sendToServer(String message) {
+        output.println(message);
     }
 
     private void sendLoginRequest(String username) {

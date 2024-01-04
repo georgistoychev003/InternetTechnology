@@ -9,8 +9,10 @@ public class ResponseHandler {
                 case "BYE_RESP" -> "You have successfully logged out. Bye do not come back!";
                 case "BROADCAST_RESP" -> "Broadcast message sent successfully.";
                 case "PRIVATE_MESSAGE_RESP" -> "Private message sent successfully.";
-                case "GAME_CREATE_RES" -> "Game lobby created successfully. Starting game in 10 seconds.";
-                default -> "error";
+                case "GAME_CREATE_RESP" -> "Game lobby created successfully. Starting game in 10 seconds.";
+                case "GAME_JOIN_RESP" -> "You successfully joined the game.";
+                case "GAME_START_RESP" -> "Game is starting. Guessing range is 1 - 50. Good luck!";
+                default -> "Response message could not be determined";
             };
         } else {
             return getCodeMeaning(responseMessage);
