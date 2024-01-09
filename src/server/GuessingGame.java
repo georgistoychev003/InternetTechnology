@@ -1,10 +1,11 @@
 package server;
 
-import messages.GameGuessMessage;
-import messages.GameGuessResponseMessage;
-import messages.Message;
-import messages.ResponseMessage;
+import messages.*;
+import utils.Utility;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -15,12 +16,17 @@ public class GuessingGame implements Runnable {
     private int secretRandomNumber;
     private int minNumber = 1;
     private int maxNumber = 50;
+    private long gameStartTime;
+    private ConcurrentHashMap<String, Long> guessTimes;
     private ConcurrentHashMap<String, ClientHandler> participants;
+    private ScheduledExecutorService gameTimer;
     private final ReentrantLock lock = new ReentrantLock();
 
     private GuessingGame() {
         this.gameInitiated = false;
         this.participants = new ConcurrentHashMap<>();
+        this.guessTimes = new ConcurrentHashMap<>();
+        gameTimer = Executors.newSingleThreadScheduledExecutor();
     }
 
     public void addParticipant(ClientHandler participant) {
@@ -66,6 +72,8 @@ public class GuessingGame implements Runnable {
                 }
 
                 if (participants.size() > 1) {
+                    gameStartTime = System.currentTimeMillis();
+                    gameTimer.schedule(this::endGame, 2, TimeUnit.MINUTES);
                     secretRandomNumber = new Random().nextInt(maxNumber + 1);
                     return new ResponseMessage("GAME_START_RESP", "OK");
                 } else {
@@ -79,7 +87,7 @@ public class GuessingGame implements Runnable {
         return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9009");
     }
 
-    public Message checkGuess(String guess) {
+    public Message checkGuess(String guess, String username) {
         int number;
         try {
             number = Integer.parseInt(guess);
@@ -87,25 +95,58 @@ public class GuessingGame implements Runnable {
             return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9002");
         }
 
-
         if (number > maxNumber || number < minNumber) {
             return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9003");
         }
 
-        if (number > secretRandomNumber) {
-            return new GameGuessResponseMessage("1");
+        if (number == secretRandomNumber) {
+            long timeTaken = System.currentTimeMillis() - gameStartTime;
+            guessTimes.put(username, timeTaken);
+            if (allParticipantsGuessedCorrectly()) {
+                endGame();
+            }
+            return new GameGuessResponseMessage("0");
         } else if (number < secretRandomNumber) {
             return new GameGuessResponseMessage("-1");
         } else {
-            return new GameGuessResponseMessage("0");
+            return new GameGuessResponseMessage("1");
         }
+    }
+
+    private boolean allParticipantsGuessedCorrectly() {
+        return guessTimes.size() == participants.size();
     }
 
 
     public void endGame() {
+        // Sort the guessTimes map by values (time taken)
+        List<Map.Entry<String, Long>> sortedGuesses = new ArrayList<>(guessTimes.entrySet());
+        sortedGuesses.sort(Map.Entry.comparingByValue());
+
+        StringBuilder resultBuilder = new StringBuilder("Guessing game results:\n");
+        int position = 1;
+        for (Map.Entry<String, Long> entry : sortedGuesses) {
+            resultBuilder.append(position++)
+                    .append(". ")
+                    .append(entry.getKey())
+                    .append(" (")
+                    .append(entry.getValue())
+                    .append("ms)\n");
+        }
+        String results = resultBuilder.toString();
+        EndGameMessage endGameMessage = new EndGameMessage(results);
+        // Broadcast results only to the participants of the game
+        participants.forEach((username, clientHandler) -> {
+            clientHandler.sendMessage(endGameMessage.getOverallData());
+        });
+
+        // Reset the game state
         gameInitiated = false;
         participants.clear();
+        guessTimes.clear();
     }
+
+
 
     public ConcurrentHashMap<String, ClientHandler> getParticipants() {
         return participants;

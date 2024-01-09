@@ -116,10 +116,17 @@ public class ClientFacade {
         }
     }
 
+//    public Message handleGameGuess(String message) {
+//        String number = Utility.extractParameterFromJson(message, "number");
+//        return getGuessingGame().checkGuess(number);
+//    }
+
     public Message handleGameGuess(String message) {
         String number = Utility.extractParameterFromJson(message, "number");
-        return getGuessingGame().checkGuess(number);
+        String username = clientHandler.getUsername();
+        return getGuessingGame().checkGuess(number, username);
     }
+
 
     private GuessingGame getGuessingGame() {
         return GuessingGame.getInstance();
