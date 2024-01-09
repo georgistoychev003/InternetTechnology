@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Arrays;
 
 public class ServerInput implements Runnable {
@@ -35,10 +36,16 @@ public class ServerInput implements Runnable {
             while ((serverResponse = input.readLine()) != null) {
                 handleServerResponse(serverResponse);
             }
+        } catch (SocketException e) {
+            System.out.println("Connection to server lost.");
+            // we may ask Gerralt if we have to try and reconnect again if the server reruns
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            closeResources();
         }
     }
+
 
     private void handleServerResponse(String response) throws IOException {
         String command = Utility.getResponseType(response);
@@ -114,5 +121,21 @@ public class ServerInput implements Runnable {
 
     private void sendToServer(String message) {
         output.println(message);
+    }
+
+    private void closeResources() {
+        try {
+            if (input != null) {
+                input.close();
+            }
+            if (output != null) {
+                output.close();
+            }
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
