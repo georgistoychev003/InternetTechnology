@@ -20,6 +20,7 @@ public class ClientHandler implements Runnable {
     private AtomicBoolean receivedPong = new AtomicBoolean(false);
     private ClientFacade clientFacade =new ClientFacade(this);
     private String username;
+    private boolean guessedSecretNumber = false;
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -125,6 +126,14 @@ public class ClientHandler implements Runnable {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public boolean guessedSecretNumber() {
+        return guessedSecretNumber;
+    }
+
+    public void setGuessedSecretNumber(boolean guessedSecretNumber) {
+        this.guessedSecretNumber = guessedSecretNumber;
     }
 
     private void handleLogout() {

@@ -10,6 +10,7 @@ import org.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Utility {
     private static ObjectMapper mapper = new ObjectMapper();
@@ -42,6 +43,28 @@ public class Utility {
         String usersString = jsonNode.asText();
         try {
             return mapper.readValue(usersString, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static List<Map.Entry<String,Long>> extractGameResultListFromJson(String data, String param){
+        JsonNode jsonNode = getMessageContents(data).get(param);
+        try {
+            String jsonArrayString = jsonNode.asText().replaceAll("^\"|\"$", "");
+
+            // Convert the "time" field to Long if it's a valid long value, otherwise keep it as a string
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Map<String, Object>> rawList = objectMapper.readValue(jsonArrayString, new TypeReference<List<Map<String, Object>>>() {});
+
+            List<Map.Entry<String, Long>> resultList = new ArrayList<>();
+            for (Map<String, Object> entry : rawList) {
+                String username = (String) entry.get("username");
+                Object timeObject = entry.get("time");
+                Long time = (timeObject instanceof Number) ? ((Number) timeObject).longValue() : null;
+                resultList.add(Map.entry(username, time));
+            }
+            return resultList;
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

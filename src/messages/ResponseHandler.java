@@ -26,9 +26,20 @@ public class ResponseHandler {
                     "Sorry, the username you provided is of invalid format or length. Please try again with a different username.";
             case "5002" -> "A user cannot login twice. You can logout and try to log in again!";
             case "6000" ->
-                    "You tried to send a message without being logged in. Your message was not processed! Please log in and then try to send a broadcast message!";
+                    "You need to be logged in to perform this action! Please log in and try again!";
             case "7000", "7001" -> "You were disconnected from the server, due to an internal error";
             case "8000" -> "Server error occurred";
+            case "9000" -> "You cannot start a game after one is already created";
+            case "9001" -> "Not enough players to start the game";
+            case "9002" -> "Invalid guess number format";
+            case "9003" -> "Guess out of range";
+            case "9004" -> "You cannot join a game after it has started";
+            case "9005" -> "You cannot make a guess when you are not logged in";
+            case "9006" -> "You cannot make a guess if you are not part of the game";
+            case "9007" -> "You cannot make a guess when game hasn’t started";
+            case "9008" -> "You cannot join the game twice";
+            case "9009" -> "Cannot start a game before creating one";
+            case "9010" -> "You have already guessed the number";
             default -> "Action failed with error code: " + responseMessage.getCode();
         };
     }

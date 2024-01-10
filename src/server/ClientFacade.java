@@ -92,6 +92,11 @@ public class ClientFacade {
     }
 
     public ResponseMessage handleGameCreateRequest() {
+        if (clientHandler.getUsername() == null) {
+            // User is not logged in
+            return new ResponseMessage("PRIVATE_MESSAGE_RESP", "ERROR", "6000");
+        }
+
         GuessingGame game = getGuessingGame();
         ResponseMessage responseMessage = game.createGame(this.clientHandler);
         if (responseMessage.getStatus().equals("OK")){
@@ -101,6 +106,7 @@ public class ClientFacade {
     }
 
     public ResponseMessage handleGameStart() {
+
         System.out.println("Currently in handleGameStart method");
         ResponseMessage startResponse = getGuessingGame().startGame(this.clientHandler);
         Server.broadcastGameStart(this.clientHandler.getUsername(), getGuessingGame(), startResponse);
@@ -108,7 +114,20 @@ public class ClientFacade {
     }
 
     public ResponseMessage handleGameJoinRequest(String username) {
+        if (clientHandler.getUsername() == null) {
+            // User is not logged in
+            return new ResponseMessage("PRIVATE_MESSAGE_RESP", "ERROR", "6000");
+        }
+
+        if (getGuessingGame().getParticipants().containsKey(username)) {
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9008");
+        }
+
         if (getGuessingGame().isGameInProgress()) {
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9004");
+        }
+
+        if (getGuessingGame().isGameInitiated()) {
             getGuessingGame().addParticipant(clientHandler); // Add client to participants
             return new ResponseMessage("GAME_JOIN_RESP", "OK");
         } else {
@@ -122,8 +141,16 @@ public class ClientFacade {
 //    }
 
     public Message handleGameGuess(String message) {
+        if (clientHandler.getUsername() == null) {
+            // User is not logged in
+            return new ResponseMessage("PRIVATE_MESSAGE_RESP", "ERROR", "9005");
+        }
+
         String number = Utility.extractParameterFromJson(message, "number");
         String username = clientHandler.getUsername();
+        if (!getGuessingGame().getParticipants().containsKey(username)){
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9006");
+        }
         return getGuessingGame().checkGuess(number, username);
     }
 

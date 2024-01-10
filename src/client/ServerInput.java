@@ -13,6 +13,10 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
 public class ServerInput implements Runnable {
     private Socket socket;
@@ -79,7 +83,7 @@ public class ServerInput implements Runnable {
                     System.out.println(MessageHandler.determineMessagePrintContents(globalMessage));
                 }
                 case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP", "GAME_CREATE_RESP",
-                        "GAME_START_RESP", "GAME_JOIN_RESP" -> {
+                        "GAME_START_RESP", "GAME_JOIN_RESP", "GAME_ERROR_RESP" -> {
                     String responseType = Utility.getResponseType(response);
                     String status = Utility.extractParameterFromJson(response, "status");
                     //If status is OK, the code is empty
@@ -112,6 +116,11 @@ public class ServerInput implements Runnable {
                     String gameGuessResponse = Utility.extractParameterFromJson(response, "number");
                     GameGuessResponseMessage guessResponseMessage = new GameGuessResponseMessage(gameGuessResponse);
                     System.out.println(MessageHandler.determineMessagePrintContents(guessResponseMessage));
+                }
+                case "GAME_END" -> {
+                    List<Map.Entry<String,Long>> gameResults = Utility.extractGameResultListFromJson(response, "results");
+                    EndGameMessage endGameMessage = new EndGameMessage(gameResults);
+                    System.out.println(MessageHandler.determineMessagePrintContents(endGameMessage));
                 }
                 default -> System.out.println(command + " Response: " + response);
             }

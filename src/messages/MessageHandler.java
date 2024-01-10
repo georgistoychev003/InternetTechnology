@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import utils.Utility;
 
 import java.util.List;
+import java.util.Map;
 
 public class MessageHandler {
 
@@ -20,8 +21,26 @@ public class MessageHandler {
             return "Game Invite: " + ((GuessingGameInviteMessage) message).getUsername() + " has invited you to join the guessing game.";
         } else if (message instanceof GameGuessResponseMessage) {
             return determineGuessStatus((GameGuessResponseMessage) message);
+        } else if (message instanceof EndGameMessage) {
+            return determineEndGameMessage((EndGameMessage) message);
         }
         return "error";
+    }
+
+    private static String determineEndGameMessage(EndGameMessage message) {
+        if (message.getGameResults().isEmpty()){
+            return "Game ended! There were no winners!";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("*-----Game results-----*\n");
+        int count = 1;
+        for (Map.Entry<String, Long> result : message.getGameResults()) {
+            sb.append(count).append(") ").append(result.getKey()).append(" -> ").append(result.getValue()).append(" ms\n");
+        }
+        sb.append("*----------------------*\n");
+
+        return sb.toString();
     }
 
     private static String determineGuessStatus(GameGuessResponseMessage message) {
