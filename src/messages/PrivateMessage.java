@@ -1,19 +1,20 @@
 package messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import utils.Utility;
 
 public class PrivateMessage extends Message {
     private String responseType;
-    private String username;
+    private String sender;
+    private String receiver;
     private String message;
 
     public PrivateMessage() {
 
     }
-    public PrivateMessage(String username, String message) {
-        this.responseType = "PRIVATE_MESSAGE";
-        this.username = username;
+    public PrivateMessage(String responseType, String sender, String receiver, String message) {
+        this.responseType = responseType;
+        this.sender = sender;
+        this.receiver = receiver;
         this.message = message;
         setOverallData(determineMessageContents());
     }
@@ -21,7 +22,8 @@ public class PrivateMessage extends Message {
     private String determineMessageContents() {
         String overallData = responseType;
         JsonNode node = getMapper().createObjectNode()
-                    .put("username", username)
+                    .put("sender", sender)
+                    .put("receiver", receiver)
                     .put("message", message);
 
 
@@ -29,17 +31,26 @@ public class PrivateMessage extends Message {
         return overallData;
     }
 
-    public String getUsername() {
-        return username;
+    public String getSender() {
+        return sender;
+    }
+
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
+    public String getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
 
     public void setMessage(String message) {
         this.message = message;

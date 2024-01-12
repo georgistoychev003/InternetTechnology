@@ -79,10 +79,10 @@ public class ClientFacade {
             return new ResponseMessage("PRIVATE_MESSAGE_RESP", "ERROR", "6000");
         }
 
-        ClientHandler privateMessageHandler = Server.getLoggedInUsers().get(privateMess.getUsername());
+        ClientHandler privateMessageHandler = Server.getLoggedInUsers().get(privateMess.getReceiver());
         if (privateMessageHandler != null) {
             // User exists so we send the private message
-            PrivateMessage privateMessage = new PrivateMessage(privateMess.getUsername(), privateMess.getMessage());
+            PrivateMessage privateMessage = new PrivateMessage("PRIVATE_MESSAGE", privateMess.getSender(), privateMess.getReceiver(), privateMess.getMessage());
             privateMessageHandler.sendMessage(privateMessage.getOverallData());
             return new ResponseMessage("PRIVATE_MESSAGE_RESP", "OK");
         } else {

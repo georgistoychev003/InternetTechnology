@@ -3,6 +3,7 @@ package client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import messages.GameGuessMessage;
+import messages.PrivateMessage;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,6 +18,7 @@ public class ClientInput implements Runnable {
     private PrintWriter output;
     private Scanner scanner;
     private ObjectMapper mapper;
+    private String username;
 
     public ClientInput(Socket socket) throws IOException {
         this.socket = socket;
@@ -24,6 +26,7 @@ public class ClientInput implements Runnable {
         output = new PrintWriter(socket.getOutputStream(), true);
         scanner = new Scanner(System.in);
         mapper = new ObjectMapper();
+        this.username = null;
     }
 
     private void handleUserInput() {
@@ -77,18 +80,15 @@ public class ClientInput implements Runnable {
             return;
         }
         //extracting rhe desired username and message
-        String targetUsername = parts[1];
+        String senderUsername = username;
+        String receiverUsername = parts[1];
         String message = parts[2];
-        sendPrivateMessageRequest(targetUsername, message);
+        sendPrivateMessageRequest(senderUsername, receiverUsername, message);
     }
 
-    private void sendPrivateMessageRequest(String username, String message) {
-
-        //TODO: use message classes?
-        ObjectNode messageNode = mapper.createObjectNode();
-        messageNode.put("username", username);
-        messageNode.put("message", message);
-        sendToServer("PRIVATE_MESSAGE_REQ", messageNode);
+    private void sendPrivateMessageRequest(String sender, String receiver, String message) {
+        PrivateMessage privateMessage = new PrivateMessage("PRIVATE_MESSAGE_REQ", sender, receiver, message);
+        sendToServer(privateMessage.getOverallData());
     }
 
 
@@ -136,6 +136,7 @@ public class ClientInput implements Runnable {
     private void sendLoginRequest(String username) {
         ObjectNode loginNode = mapper.createObjectNode();
         loginNode.put("username", username);
+        this.username = username;
         sendToServer("LOGIN", loginNode);
     }
 

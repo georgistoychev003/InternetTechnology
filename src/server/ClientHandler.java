@@ -88,9 +88,10 @@ public class ClientHandler implements Runnable {
                     sendMessage(listRequestMessageToSend.getOverallData());
                     break;
                 case "PRIVATE_MESSAGE_REQ":
-                    String privateUsername = Utility.extractParameterFromJson(message, "username");
+                    String senderUsername = Utility.extractParameterFromJson(message, "sender");
+                    String receiverUsername = Utility.extractParameterFromJson(message, "receiver");
                     String concreteMessage = Utility.extractParameterFromJson(message, "message");
-                    PrivateMessage privateMessage = new PrivateMessage(privateUsername, concreteMessage);
+                    PrivateMessage privateMessage = new PrivateMessage("PRIVATE_MESSAGE", senderUsername, receiverUsername, concreteMessage);
                     Message privateMessageResponseToSend = clientFacade.handlePrivateMessageRequest(privateMessage);
                     sendMessage(privateMessageResponseToSend.getOverallData());
                     break;

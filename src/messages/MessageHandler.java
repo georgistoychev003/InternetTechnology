@@ -16,7 +16,7 @@ public class MessageHandler {
         } else if (message instanceof LeftMessage) {
             return  "A user with username \"" + ((LeftMessage) message).getUsername() + "\" just left the chat/disconnected.";
         } else if (message instanceof PrivateMessage){
-            return "Private: " + ((PrivateMessage) message).getUsername() + "-> " + ((PrivateMessage) message).getMessage();
+            return "Private: " + ((PrivateMessage) message).getSender() + "-> " + ((PrivateMessage) message).getMessage();
         } else if (message instanceof GuessingGameInviteMessage) {
             return "Game Invite: " + ((GuessingGameInviteMessage) message).getUsername() + " has invited you to join the guessing game.";
         } else if (message instanceof GameGuessResponseMessage) {

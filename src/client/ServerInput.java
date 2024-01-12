@@ -101,9 +101,10 @@ public class ServerInput implements Runnable {
                     System.out.println(MessageHandler.handlePrintOfConnectedClients(message));
                 }
                 case "PRIVATE_MESSAGE" -> {
-                    String privateUsername = Utility.extractParameterFromJson(response, "username");
+                    String senderUsername = Utility.extractParameterFromJson(response, "sender");
+                    String receiverUsername = Utility.extractParameterFromJson(response, "receiver");
                     String concreteMessage = Utility.extractParameterFromJson(response, "message");
-                    PrivateMessage privateMessage = new PrivateMessage(privateUsername, concreteMessage);
+                    PrivateMessage privateMessage = new PrivateMessage("PRIVATE_MESSAGE", senderUsername, receiverUsername, concreteMessage);
 //                    PrivateMessage privateMessage = mapper.readValue(body, PrivateMessage.class);
                     System.out.println(MessageHandler.determineMessagePrintContents(privateMessage));
                 }
