@@ -116,6 +116,7 @@ public class ClientInput implements Runnable {
         System.out.println("private <username> <message> - Send a private message");
         System.out.println("game create - Creates a number guessing game");
         System.out.println("game join - Join the number guessing game");
+        System.out.println("game guess <number> - Attempt to guess the secret number in the Guessing Game");
         System.out.println("logout - Logout from the server");
     }
 

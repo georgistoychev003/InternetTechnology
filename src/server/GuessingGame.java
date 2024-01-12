@@ -18,7 +18,7 @@ public class GuessingGame implements Runnable {
     private boolean gameStarted = false;
     private int secretRandomNumber;
     private int minNumber = 1;
-    private int maxNumber = 5;
+    private int maxNumber = 50;
     private long gameStartTime;
     private ConcurrentHashMap<String, Long> guessTimes;
     private ConcurrentHashMap<String, ClientHandler> participants;

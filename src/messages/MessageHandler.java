@@ -37,6 +37,7 @@ public class MessageHandler {
         int count = 1;
         for (Map.Entry<String, Long> result : message.getGameResults()) {
             sb.append(count).append(") ").append(result.getKey()).append(" -> ").append(result.getValue()).append(" ms\n");
+            count++;
         }
         sb.append("*----------------------*\n");
 

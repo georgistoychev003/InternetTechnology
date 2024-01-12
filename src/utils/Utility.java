@@ -33,10 +33,16 @@ public class Utility {
         return node;
     }
 
+//    public static String extractParameterFromJson(String data, String param){
+//        JsonNode jsonNode = getMessageContents(data);
+//        return jsonNode.get(param).asText();
+//    }
     public static String extractParameterFromJson(String data, String param){
         JsonNode jsonNode = getMessageContents(data);
-        return jsonNode.get(param).asText();
+        JsonNode valueNode = jsonNode.get(param);
+        return valueNode != null ? valueNode.asText() : null;
     }
+
 
     public static List<String> extractUserListFromJson(String data, String param){
         JsonNode jsonNode = getMessageContents(data).get(param);
