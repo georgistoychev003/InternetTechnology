@@ -18,7 +18,7 @@ public class MessageHandler {
         } else if (message instanceof PrivateMessage){
             return "Private: " + ((PrivateMessage) message).getSender() + "-> " + ((PrivateMessage) message).getMessage();
         } else if (message instanceof GuessingGameInviteMessage) {
-            return "Game Invite: " + ((GuessingGameInviteMessage) message).getUsername() + " has invited you to join the guessing game.";
+            return "Game Invite: " + ((GuessingGameInviteMessage) message).getUsername() + " has invited you to join the guessing game. Use 'game join' command to join the game";
         } else if (message instanceof GameGuessResponseMessage) {
             return determineGuessStatus((GameGuessResponseMessage) message);
         } else if (message instanceof EndGameMessage) {

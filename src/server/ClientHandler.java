@@ -18,7 +18,7 @@ public class ClientHandler implements Runnable {
     private OutputStream outputStream;
     private AtomicBoolean running;
     private AtomicBoolean receivedPong = new AtomicBoolean(false);
-    private ClientFacade clientFacade =new ClientFacade(this);
+    private ClientFacade clientFacade = new ClientFacade(this);
     private String username;
     private boolean guessedSecretNumber = false;
 
@@ -53,7 +53,7 @@ public class ClientHandler implements Runnable {
     }
 
 
-    private void processClientMessage(String message)  {
+    private void processClientMessage(String message) {
         System.out.println(message);
         try {
             String command = Utility.getResponseType(message);
@@ -79,10 +79,6 @@ public class ClientHandler implements Runnable {
                 case "PONG":
                     receivedPong.set(true);
                     break;
-//                case "PING":
-//                    // This should not normally happen as server sends PING
-//                    sendMessage("PONG_ERROR", "{\"code\": 8000}");
-//                    break;
                 case "CLIENT_LIST_REQ":
                     Message listRequestMessageToSend = clientFacade.handleClientListRequest();
                     sendMessage(listRequestMessageToSend.getOverallData());
@@ -98,7 +94,7 @@ public class ClientHandler implements Runnable {
                 case "GAME_CREATE_REQ":
                     ResponseMessage gameCreateResponse = clientFacade.handleGameCreateRequest();
                     sendMessage(gameCreateResponse.getOverallData());
-                    if (gameCreateResponse.getStatus().equals("OK")){
+                    if (gameCreateResponse.getStatus().equals("OK")) {
                         ResponseMessage gameStartResponse = clientFacade.handleGameStart();
                         sendMessage(gameStartResponse.getOverallData());
                     }
@@ -106,6 +102,13 @@ public class ClientHandler implements Runnable {
                 case "GAME_JOIN_REQ":
                     ResponseMessage joinResponse = clientFacade.handleGameJoinRequest(this.username);
                     sendMessage(joinResponse.getOverallData());
+                    break;
+                case "FILE_TRANSFER_REQ":
+                    String fileReceiverUsername = Utility.extractParameterFromJson(message, "username");
+                    String fileName = Utility.extractParameterFromJson(message, "fileName");
+                    FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", fileReceiverUsername, fileName);
+                    ResponseMessage fileTransferRequestMessage = clientFacade.handleFileTransferRequest(fileTransferREQMessage);
+                    sendMessage(fileTransferRequestMessage.getOverallData());
                     break;
                 case "GUESS_NUMBER":
                     Message guessMessage = clientFacade.handleGameGuess(message);
@@ -153,7 +156,7 @@ public class ClientHandler implements Runnable {
                     sendMessage(pingMessage.getOverallData());
 
                     // Wait for 3 seconds for PONG response
-                    Thread.sleep(10000);
+                    Thread.sleep(5000);
                     if (!receivedPong.get()) {
                         DisconnectMessage disconnectMessage = new DisconnectMessage("7000");
                         sendMessage(disconnectMessage.getOverallData());
@@ -205,8 +208,8 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-        Thread.currentThread().interrupt(); // terminate client thread
-    }
+            Thread.currentThread().interrupt(); // terminate client thread
+        }
     }
 
 }

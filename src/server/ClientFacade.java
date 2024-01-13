@@ -135,6 +135,23 @@ public class ClientFacade {
         }
     }
 
+    public ResponseMessage handleFileTransferRequest(FileTransferREQMessage fileTransferREQMessage) {
+        String senderUsername = clientHandler.getUsername();
+        String receiverUsername = fileTransferREQMessage.getUsername();
+
+        // Check if the sender is logged in
+        if (senderUsername == null) {
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "6000"); // User not logged in
+        }
+
+        // Check if the recipient exists and is different from the sender
+        if (!Server.getLoggedInUsers().containsKey(receiverUsername) || senderUsername.equals(receiverUsername)) {
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8001"); // Recipient not logged in or sender is the same as recipient
+        }
+
+        return new ResponseMessage("FILE_TRANSFER_RESP", "OK");
+    }
+
 //    public Message handleGameGuess(String message) {
 //        String number = Utility.extractParameterFromJson(message, "number");
 //        return getGuessingGame().checkGuess(number);
@@ -158,4 +175,6 @@ public class ClientFacade {
     private GuessingGame getGuessingGame() {
         return GuessingGame.getInstance();
     }
+
+
 }

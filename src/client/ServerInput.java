@@ -83,7 +83,7 @@ public class ServerInput implements Runnable {
                     System.out.println(MessageHandler.determineMessagePrintContents(globalMessage));
                 }
                 case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP", "GAME_CREATE_RESP",
-                        "GAME_START_RESP", "GAME_JOIN_RESP", "GAME_ERROR_RESP" -> {
+                        "GAME_START_RESP", "GAME_JOIN_RESP", "GAME_ERROR_RESP", "FILE_TRANSFER_RESP" -> {
                     String responseType = Utility.getResponseType(response);
                     String status = Utility.extractParameterFromJson(response, "status");
                     //If status is OK, the code is empty

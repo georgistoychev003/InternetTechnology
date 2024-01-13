@@ -12,6 +12,7 @@ public class ResponseHandler {
                 case "GAME_CREATE_RESP" -> "Game lobby created successfully. Starting game in 10 seconds.";
                 case "GAME_JOIN_RESP" -> "You successfully joined the game.";
                 case "GAME_START_RESP" -> "Game is starting. Guessing range is 1 - 50. Good luck!";
+                case "FILE_TRANSFER_RESP" -> "Your file transfer request was sent to the desired recipient. The recipient can accept or decline your request!";
                 default -> "Response message could not be determined";
             };
         } else {
@@ -29,6 +30,7 @@ public class ResponseHandler {
                     "You need to be logged in to perform this action! Please log in and try again!";
             case "7000", "7001" -> "You were disconnected from the server, due to an internal error";
             case "8000" -> "Server error occurred";
+            case "8001" -> "You cannot send a file to yourself or a non-existent user";
             case "9000" -> "You cannot start a game after one is already created";
             case "9001" -> "Not enough players to start the game";
             case "9002" -> "Invalid guess number format";

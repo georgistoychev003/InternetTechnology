@@ -7,8 +7,10 @@ import java.util.Scanner;
 public class Client {
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static final int SERVER_PORT = 1337;
+    private static final int FILE_TRANSFER_PORT = 1338;
 
     private Socket socket;
+    private Socket fileTransferSocket;
     private Scanner scanner;
 
     public Client() {

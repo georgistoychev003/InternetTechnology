@@ -2,6 +2,7 @@ package client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import messages.FileTransferREQMessage;
 import messages.GameGuessMessage;
 import messages.PrivateMessage;
 
@@ -38,7 +39,6 @@ public class ClientInput implements Runnable {
                handleMessageCommand(userInput);
             } else if (userInput.equalsIgnoreCase("list")) {
                 sendListRequest();
-
             } else if (userInput.startsWith("private ")) {
                 handlePrivateMessageCommand(userInput);
             } else if (userInput.startsWith("game create")) {
@@ -47,6 +47,8 @@ public class ClientInput implements Runnable {
                 handleGameJoin();
             } else if (userInput.startsWith("game guess ")) {
                 handleGameGuess(userInput);
+            } else if(userInput.startsWith("transfer file ")){
+                handleFileTransfer(userInput);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
                 break;
@@ -107,6 +109,23 @@ public class ClientInput implements Runnable {
         sendToServer(gameGuessMessage.getOverallData());
 
     }
+    private void handleFileTransfer(String userInput) {
+        String[] parts = userInput.split(" ", 4);
+        if (parts.length < 4) {
+            System.out.println("Invalid command. Use: transfer file to <username> <fileName>");
+            return;
+        }
+
+        String fileReceiverUsername = parts[2];
+        String fileName = parts[3];
+
+        sendFileTransferRequest(fileReceiverUsername, fileName);
+    }
+
+    private void sendFileTransferRequest(String receiver, String fileName) {
+        FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", receiver, fileName);
+        sendToServer(fileTransferREQMessage.getOverallData());
+    }
 
     private void showHelpMenu() {
         System.out.println("Commands:");
@@ -117,6 +136,7 @@ public class ClientInput implements Runnable {
         System.out.println("game create - Creates a number guessing game");
         System.out.println("game join - Join the number guessing game");
         System.out.println("game guess <number> - Attempt to guess the secret number in the Guessing Game");
+        System.out.println("transfer file <username> <filename> - request to transfer a file to a user by providing the recepeint's username and a filename");
         System.out.println("logout - Logout from the server");
     }
 
@@ -147,7 +167,9 @@ public class ClientInput implements Runnable {
     }
 
     private void sendLogoutRequest() {
-        sendToServer("BYE", null);
+        if (username != null) {
+            sendToServer("BYE", null);
+        }
     }
 
     private void sendListRequest() {
@@ -156,6 +178,12 @@ public class ClientInput implements Runnable {
 
     @Override
     public void run() {
-        handleUserInput();
+        try {
+            handleUserInput();
+        } finally {
+            sendLogoutRequest();
+        }
     }
+
+
 }

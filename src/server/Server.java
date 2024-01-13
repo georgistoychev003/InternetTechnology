@@ -11,14 +11,21 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
     private static final int PORT = 1337;
+    private static final int FILE_TRANSFER_PORT = 1338;
     private ServerSocket serverSocket;
+    private ServerSocket fileTransferServerSocket;
     private static ConcurrentHashMap<String, ClientHandler> loggedInUsers = new ConcurrentHashMap<>();
     public static final String VERSION = "1.0";
 
     public void startServer() {
         try {
             serverSocket = new ServerSocket(PORT);
+            fileTransferServerSocket = new ServerSocket(FILE_TRANSFER_PORT);
             System.out.println("Server started on port " + PORT);
+            System.out.println("File Transfer Server started on port " + FILE_TRANSFER_PORT);
+
+            // Separate thread for handling file transfer connections
+            new Thread(this::handleFileTransferConnections).start();
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -34,10 +41,27 @@ public class Server {
         }
     }
 
+    private void handleFileTransferConnections() {
+        try {
+            while (!fileTransferServerSocket.isClosed()) {
+                Socket fileTransferSocket = fileTransferServerSocket.accept();
+                System.out.println("File transfer connection accepted: " + fileTransferSocket.getInetAddress().getHostAddress());
+                FileTransferHandler fileTransferHandler = new FileTransferHandler(fileTransferSocket);
+                new Thread(fileTransferHandler).start();
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred in the file transfer server: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public void stopServer() {
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
+            }
+            if (fileTransferServerSocket != null && !fileTransferServerSocket.isClosed()) {
+                fileTransferServerSocket.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
