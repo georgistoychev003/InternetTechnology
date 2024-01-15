@@ -22,9 +22,7 @@ public class Message {
 
     @Override
     public String toString() {
-        return "Message{" +
-                "overallData='" + overallData + '\'' +
-                '}';
+        return overallData;
     }
 
     public void setOverallData(String overallData) {

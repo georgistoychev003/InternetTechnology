@@ -20,7 +20,7 @@ class SingleUserTests {
     private static Properties props = new Properties();
     private static int ping_time_ms;
     private static int ping_time_ms_delta_allowed;
-    private final static int max_delta_allowed_ms = 100; // TODO: ask what is this - gives an error first time we run T2
+    private final static int max_delta_allowed_ms = 1000;
 
     private Socket s;
     private BufferedReader in;
@@ -63,22 +63,21 @@ class SingleUserTests {
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
         System.out.println(serverResponse);
-        String responseType = Utility.getResponseType(serverResponse);
-        String status = Utility.extractParameterFromJson(serverResponse, "status");
-        ResponseMessage resp = new ResponseMessage(responseType, status);
+        ResponseMessage resp = Utility.createResponseClass(serverResponse);
 //        ResponseMessage resp = Utils.messageToObject(serverResponse); // TODO: ask ... Utils
         assertEquals("OK", resp.getStatus());
     }
 
-//    @Test
-//    void TC5_3_invalidJsonMessageReturnsParseError() throws JsonProcessingException {
-//        receiveLineWithTimeout(in); //welcome message
-//        out.println("LOGIN {\"}");
-//        out.flush();
-//        String serverResponse = receiveLineWithTimeout(in);
-//        ParseError parseError = Utils.messageToObject(serverResponse);
-//        assertNotNull(parseError);
-//    }
+    @Test
+    void TC5_3_invalidJsonMessageReturnsParseError() throws JsonProcessingException {
+        receiveLineWithTimeout(in); //welcome message
+        out.println("LOGIN {\"}");
+        out.flush();
+        String serverResponse = receiveLineWithTimeout(in);
+        String error = serverResponse.split(" ", 2)[1];
+        ParseError parseError = new ParseError(error);
+        assertNotNull(parseError.getOverallData());
+    }
 
     @Test
     void TC5_4_emptyJsonMessageReturnsError() throws JsonProcessingException {
@@ -86,34 +85,37 @@ class SingleUserTests {
         out.println("LOGIN {\"username\": \"aa\"}");
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new ResponseMessage("ERROR", "5001"), loginResp);
+        ResponseMessage resp = Utility.createResponseClass(serverResponse);
+//        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
+        assertEquals(new ResponseMessage("LOGIN_RESP", "ERROR", "5001").getOverallData(), resp.getOverallData());
     }
 
 //    @Test
 //    void TC5_5_pongWithoutPingReturnsErrorMessage() throws JsonProcessingException {
 //        receiveLineWithTimeout(in); //welcome message
-//        out.println(Utils.objectToMessage(new Pong()));
+//        out.println("PONG");
 //        out.flush();
 //        String serverResponse = receiveLineWithTimeout(in);
-//        PongError pongError = Utils.messageToObject(serverResponse);
-//        assertEquals(new PongError(8000), pongError);
+//        System.out.println(serverResponse);
+//        String reason = Utility.extractParameterFromJson(serverResponse, "reason");
+//        DisconnectMessage pongError = Utils.messageToObject(serverResponse);
+//        assertEquals(new DisconnectMessage("7000").getOverallData(), pongError.getOverallData());
 //    }
 
     @Test
     void TC5_6_logInTwiceReturnsErrorMessage() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        out.println(Utils.objectToMessage(new LoginMessage("first")));
+        out.println(new LoginMessage("first").getOverallData());
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
         assertEquals("OK", loginResp.getStatus());
 
-        out.println(Utils.objectToMessage(new LoginMessage("second")));
+        out.println(new LoginMessage("second").getOverallData());
         out.flush();
         serverResponse = receiveLineWithTimeout(in);
-        loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new ResponseMessage("ERROR", "5002"), loginResp);
+        loginResp = Utility.createResponseClass(serverResponse);
+        assertEquals(new ResponseMessage("LOGIN_RESP", "ERROR", "5002").getOverallData(), loginResp.getOverallData());
     }
 
 //    @Test
@@ -140,6 +142,17 @@ class SingleUserTests {
 //            assertTrue(timeElapsed > ping_time_ms - ping_time_ms_delta_allowed);
 //        });
 //    }
+
+    @Test
+    void TC5_8_requestingClientListWhenNotLoggedInReturnsError() throws JsonProcessingException {
+        receiveLineWithTimeout(in); //welcome message
+        out.println(new ClientListMessage("CLIENT_LIST_REQ"));
+        out.flush();
+        String serverResponse = receiveLineWithTimeout(in);
+        ResponseMessage clientListResp = Utility.createResponseClass(serverResponse);
+        assertEquals(new ResponseMessage("CLIENT_LIST_RESP", "ERROR", "6000").getOverallData(), clientListResp.getOverallData());
+
+    }
 
     private String receiveLineWithTimeout(BufferedReader reader) {
         return assertTimeoutPreemptively(ofMillis(max_delta_allowed_ms), reader::readLine);

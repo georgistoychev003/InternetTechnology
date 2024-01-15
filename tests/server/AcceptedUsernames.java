@@ -5,6 +5,7 @@ import messages.LoginMessage;
 import messages.ResponseMessage;
 import org.junit.jupiter.api.*;
 import server.protocol.utils.Utils;
+import utils.Utility;
 
 import java.io.*;
 import java.net.Socket;
@@ -44,51 +45,51 @@ class AcceptedUsernames {
     @Test
     void TC1_1_userNameWithThreeCharactersIsAccepted() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        out.println(Utils.objectToMessage(new LoginMessage("mym")));
+        out.println(new LoginMessage("mym"));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
         assertEquals("OK", loginResp.getStatus());
     }
 
     @Test
     void TC1_2_userNameWithTwoCharactersReturnsError() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        out.println(Utils.objectToMessage(new LoginMessage("my")));
+        out.println(new LoginMessage("my"));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new ResponseMessage("ERROR","5001"),loginResp, "Too short username accepted: " + serverResponse);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
+        assertEquals(new ResponseMessage("LOGIN_RESP","ERROR","5001").getOverallData(),loginResp.getOverallData(), "Too short username accepted: " + serverResponse);
     }
 
     @Test
     void TC1_3_userNameWith14CharactersIsAccepted() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        out.println(Utils.objectToMessage(new LoginMessage("abcdefghijklmn")));
+        out.println(new LoginMessage("abcdefghijklmn"));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
         assertEquals("OK", loginResp.getStatus());
     }
 
     @Test
     void TC1_4_userNameWith15CharectersReturnsError() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        out.println(Utils.objectToMessage(new LoginMessage("abcdefghijklmop")));
+        out.println(new LoginMessage("abcdefghijklmop"));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new ResponseMessage("ERROR","5001"), loginResp, "Too long username accepted: " + serverResponse);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
+        assertEquals(new ResponseMessage("LOGIN_RESP","ERROR","5001").getOverallData(), loginResp.getOverallData(), "Too long username accepted: " + serverResponse);
     }
 
     @Test
     void TC1_5_userNameWithStarReturnsError() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        out.println(Utils.objectToMessage(new LoginMessage("*a*")));
+        out.println(new LoginMessage("*a*"));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new ResponseMessage("ERROR","5001"), loginResp, "Wrong character accepted");
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
+        assertEquals(new ResponseMessage("LOGIN_RESP","ERROR","5001").getOverallData(), loginResp.getOverallData(), "Wrong character accepted");
     }
 
     private String receiveLineWithTimeout(BufferedReader reader) {

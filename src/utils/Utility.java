@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import messages.ResponseMessage;
+import messages.*;
 import org.json.JSONArray;
 
 import java.util.ArrayList;
@@ -27,6 +27,7 @@ public class Utility {
             //add responseType to the node that is being returned
             ((ObjectNode)node).put("responseType", responseType);
         } catch (JsonProcessingException e) {
+            System.out.println("Invalid JSON content: " + jsonPart);
             throw new RuntimeException(e);
         }
 
@@ -81,5 +82,60 @@ public class Utility {
         return parts[0];
     }
 
+    public static ResponseMessage createResponseClass(String response) {
+        String responseType = Utility.getResponseType(response);
+        String status = Utility.extractParameterFromJson(response, "status");
+        String code = "";
+        if (status.equals("ERROR")){
+            code = Utility.extractParameterFromJson(response, "code");
+        }
+        return new ResponseMessage(responseType, status, code);
+    }
+
+    public static JoinedMessage createJoinedClass(String message) {
+        String username = Utility.extractParameterFromJson(message, "username");
+        return new JoinedMessage(username);
+    }
+
+    public static LoginMessage createLoginClass(String message) {
+        String username = Utility.extractParameterFromJson(message, "username");
+        return new LoginMessage(username);
+    }
+
+    public static GlobalMessage createGlobalMessageClass(String globalMessage) {
+        String responseType = Utility.getResponseType(globalMessage);
+        String username = Utility.extractParameterFromJson(globalMessage, "username");
+        String message = Utility.extractParameterFromJson(globalMessage, "message");
+        return new GlobalMessage(responseType, username, message);
+    }
+
+    public static ClientListMessage createClientListClass(String message) {
+        String status = Utility.extractParameterFromJson(message, "status");
+        List<String> clients = Utility.extractUserListFromJson(message, "users");
+        return new ClientListMessage(status, clients);
+    }
+
+    public static PrivateMessage createPrivateMessageClass(String message) {
+        String responseType = Utility.getResponseType(message);
+        String sender = Utility.extractParameterFromJson(message, "sender");
+        String receiver = Utility.extractParameterFromJson(message, "receiver");
+        String prvMessage = Utility.extractParameterFromJson(message, "message");
+        return new PrivateMessage(responseType, sender, receiver, prvMessage);
+    }
+
+    public static GuessingGameInviteMessage createGameInviteMessageClass(String message) {
+        String user = Utility.extractParameterFromJson(message, "username");
+        return new GuessingGameInviteMessage(user);
+    }
+
+    public static GameGuessResponseMessage createGameGuessResponseClass(String message) {
+        String number = Utility.extractParameterFromJson(message, "number");
+        return new GameGuessResponseMessage(number);
+    }
+
+    public static EndGameMessage createEndGameMessageClass(String message) {
+        List<Map.Entry<String, Long>> results = Utility.extractGameResultListFromJson(message, "results");
+        return new EndGameMessage(results);
+    }
 
 }

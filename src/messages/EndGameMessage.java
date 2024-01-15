@@ -48,4 +48,8 @@ public class EndGameMessage extends Message {
         this.gameResults = gameResults;
         setOverallData(determineMessageContents()); // Update the overall data if game results change
     }
+
+    public String getWinner() {
+        return gameResults.get(0).getKey();
+    }
 }

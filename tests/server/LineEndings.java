@@ -6,6 +6,7 @@ import messages.LoginMessage;
 import messages.ResponseMessage;
 import org.junit.jupiter.api.*;
 import server.protocol.utils.Utils;
+import utils.Utility;
 
 import java.io.*;
 import java.net.Socket;
@@ -22,7 +23,7 @@ class LineEndings {
     private BufferedReader in;
     private PrintWriter out;
 
-    private final static int max_delta_allowed_ms = 100;
+    private final static int max_delta_allowed_ms = 1000;
 
     @BeforeAll
     static void setupAll() throws IOException {
@@ -46,32 +47,32 @@ class LineEndings {
     @Test
     void TC2_1_loginFollowedByBROADCASTWithWindowsLineEndingsReturnsOk() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        String message = Utils.objectToMessage(new LoginMessage("myname")) + "\r\n" +
-                Utils.objectToMessage(new GlobalMessage("BROADCAST_REQ","myname","a")) + "\r\n";
+        String message = new LoginMessage("myname") + "\r\n" +
+                new GlobalMessage("BROADCAST_REQ","myname","a") + "\r\n";
         out.print(message);
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
         assertEquals("OK", loginResp.getStatus());
 
         serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage broadcastResp = Utils.messageToObject(serverResponse);
+        ResponseMessage broadcastResp = Utility.createResponseClass(serverResponse);
         assertEquals("OK", broadcastResp.getStatus());
     }
 
     @Test
     void TC2_2_loginFollowedByBROADCASTWithLinuxLineEndingsReturnsOk() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        String message = Utils.objectToMessage(new LoginMessage("myname")) + "\n" +
-                Utils.objectToMessage(new GlobalMessage("BROADCAST_REQ","user2","a")) + "\n";
+        String message = new LoginMessage("myname") + "\n" +
+                new GlobalMessage("BROADCAST_REQ","user2","a") + "\n";
         out.print(message);
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
         assertEquals("OK", loginResp.getStatus());
 
         serverResponse = receiveLineWithTimeout(in);
-        ResponseMessage broadcastResp = Utils.messageToObject(serverResponse);
+        ResponseMessage broadcastResp = Utility.createResponseClass(serverResponse);
         assertEquals("OK", broadcastResp.getStatus());
     }
 

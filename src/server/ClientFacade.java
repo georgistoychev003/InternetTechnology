@@ -116,7 +116,7 @@ public class ClientFacade {
     public ResponseMessage handleGameJoinRequest(String username) {
         if (clientHandler.getUsername() == null) {
             // User is not logged in
-            return new ResponseMessage("PRIVATE_MESSAGE_RESP", "ERROR", "6000");
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "6000");
         }
 
         if (getGuessingGame().getParticipants().containsKey(username)) {
@@ -160,7 +160,7 @@ public class ClientFacade {
     public Message handleGameGuess(String message) {
         if (clientHandler.getUsername() == null) {
             // User is not logged in
-            return new ResponseMessage("PRIVATE_MESSAGE_RESP", "ERROR", "9005");
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9005");
         }
 
         String number = Utility.extractParameterFromJson(message, "number");

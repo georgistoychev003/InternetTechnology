@@ -24,6 +24,11 @@ public class ClientListMessage extends Message{
         setOverallData(determineMessageContents());
     }
 
+    public ClientListMessage(String responseType) {
+        this.responseType = responseType;
+        setOverallData(responseType);
+    }
+
     private String determineMessageContents() {
        String usersJsonArray = convertUsersListToJsonArray(users);
 
