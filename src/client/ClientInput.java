@@ -7,12 +7,17 @@ import messages.FileTransferREQMessage;
 import messages.GameGuessMessage;
 import messages.PrivateMessage;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
+import java.util.UUID;
 
 public class ClientInput implements Runnable {
     private Socket socket;
@@ -20,6 +25,7 @@ public class ClientInput implements Runnable {
     private PrintWriter output;
     private Scanner scanner;
     private ObjectMapper mapper;
+    private Socket fileTransferSocket;
     private String username;
 
     public ClientInput(Socket socket) throws IOException {
@@ -139,6 +145,10 @@ public class ClientInput implements Runnable {
         }
         String responseCode = response.equalsIgnoreCase("yes") ? "1" : "-1";
         sendFileReceiveResponse(responseCode);
+
+        if (response.equalsIgnoreCase("yes")) {
+            initiateFileTransfer();
+        }
     }
 
     private void sendFileReceiveResponse(String responseCode) {
@@ -146,7 +156,55 @@ public class ClientInput implements Runnable {
         sendToServer(responseMessage.getOverallData());
     }
 
+    private void initiateFileTransfer() {
+        try {
+            // Connect to the file transfer server
+            fileTransferSocket = new Socket( "127.0.0.1", 1338);
 
+            // Send the file content to the server
+            sendFileContent();
+
+            // Close the file transfer socket
+            fileTransferSocket.close();
+        } catch (IOException e) {
+            System.err.println("Exception during file transfer initiation: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void sendFileContent() {
+        String filePath = "src/file.txt";
+        try (FileInputStream fileInputStream = new FileInputStream(filePath);
+             OutputStream outputStream = fileTransferSocket.getOutputStream()) {
+
+            // Include sender/receiver indicator, UUID, and checksum in the file content
+            outputStream.write('S');
+            outputStream.write(UUID.randomUUID().toString().getBytes());
+            String checksum = calculateMD5Checksum(filePath);
+            System.out.println("Checksum: " + checksum);
+            System.out.println("Checksum length: " + checksum.length());
+            outputStream.write(checksum.getBytes());
+
+            long bytesTransferred = fileInputStream.transferTo(fileTransferSocket.getOutputStream());
+
+            System.out.println("File Transfer Complete. Bytes Transferred: " + bytesTransferred);
+        } catch (IOException e) {
+            System.err.println("Exception during file content transfer: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private String calculateMD5Checksum(String filePath) throws IOException {
+        byte[] data = Files.readAllBytes(Paths.get(filePath));
+        byte[] hash;
+        try {
+            hash = MessageDigest.getInstance("MD5").digest(data);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        String checksum = new BigInteger(1, hash).toString(16);
+        return checksum;
+    }
 
     private void sendFileTransferRequest(String receiver, String fileName) {
         FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", receiver, fileName);
