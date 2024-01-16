@@ -145,9 +145,15 @@ public class ClientFacade {
         }
 
         // Check if the recipient exists and is different from the sender
-        if (!Server.getLoggedInUsers().containsKey(receiverUsername) || senderUsername.equals(receiverUsername)) {
-            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8001"); // Recipient not logged in or sender is the same as recipient
+        ClientHandler receiverHandler = Server.getLoggedInUsers().get(receiverUsername);
+        if (receiverHandler == null || senderUsername.equals(receiverUsername)) {
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8001"); // Recipient not found or sender is the same as recipient
         }
+
+
+        FileTransferREQMessage fileReceiveReqMessage = new FileTransferREQMessage("FILE_RECEIVE_REQ", senderUsername, fileTransferREQMessage.getFileName());
+        receiverHandler.sendMessage(fileReceiveReqMessage.getOverallData());
+
 
         return new ResponseMessage("FILE_TRANSFER_RESP", "OK");
     }

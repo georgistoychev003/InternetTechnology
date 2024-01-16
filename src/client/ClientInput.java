@@ -2,6 +2,7 @@ package client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import messages.FileReceiveResponseMessage;
 import messages.FileTransferREQMessage;
 import messages.GameGuessMessage;
 import messages.PrivateMessage;
@@ -49,6 +50,8 @@ public class ClientInput implements Runnable {
                 handleGameGuess(userInput);
             } else if(userInput.startsWith("transfer file ")){
                 handleFileTransfer(userInput);
+            } else if (userInput.startsWith("file receive response ")) {
+                handleFileReceiveResponseCommand(userInput);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
                 break;
@@ -122,6 +125,29 @@ public class ClientInput implements Runnable {
         sendFileTransferRequest(fileReceiverUsername, fileName);
     }
 
+    private void handleFileReceiveResponseCommand(String userInput) {
+        // Expecting input in the format: "file receive response <Yes/No>"
+        String[] parts = userInput.split(" ", 4);
+        if (parts.length < 4) {
+            System.out.println("Invalid command. Use: file receive response <Yes/No>");
+            return;
+        }
+        String response = parts[3].trim().toLowerCase();
+        if (!response.equalsIgnoreCase("yes") && !response.equalsIgnoreCase("no")) {
+            System.out.println("Invalid response. Please respond with 'Yes' or 'No'.");
+            return;
+        }
+        String responseCode = response.equalsIgnoreCase("yes") ? "1" : "-1";
+        sendFileReceiveResponse(responseCode);
+    }
+
+    private void sendFileReceiveResponse(String responseCode) {
+        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(responseCode);
+        sendToServer(responseMessage.getOverallData());
+    }
+
+
+
     private void sendFileTransferRequest(String receiver, String fileName) {
         FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", receiver, fileName);
         sendToServer(fileTransferREQMessage.getOverallData());
@@ -137,6 +163,7 @@ public class ClientInput implements Runnable {
         System.out.println("game join - Join the number guessing game");
         System.out.println("game guess <number> - Attempt to guess the secret number in the Guessing Game");
         System.out.println("transfer file <username> <filename> - request to transfer a file to a user by providing the recepeint's username and a filename");
+        System.out.println("file receive response <yes/no> - accept/decline a file that a user wants to transfer to you");
         System.out.println("logout - Logout from the server");
     }
 
@@ -166,7 +193,7 @@ public class ClientInput implements Runnable {
         sendToServer("BROADCAST_REQ", messageNode);
     }
 
-    private void sendLogoutRequest() {
+    protected void sendLogoutRequest() {
         if (username != null) {
             sendToServer("BYE", null);
         }
@@ -174,6 +201,9 @@ public class ClientInput implements Runnable {
 
     private void sendListRequest() {
         sendToServer("CLIENT_LIST_REQ", null);
+    }
+    public boolean isLoggedIn() {
+        return username != null;
     }
 
     @Override

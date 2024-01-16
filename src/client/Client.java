@@ -28,6 +28,13 @@ public class Client {
 
             serverThread.start();
             clientThread.start();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("Client is shutting down. Logging out...");
+                if (clientInput.isLoggedIn()) {
+                    clientInput.sendLogoutRequest();
+                }
+            }));
         } catch (IOException e) {
             e.printStackTrace();
         }

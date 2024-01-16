@@ -92,16 +92,14 @@ public class ClientHandler implements Runnable {
                     sendMessage(privateMessageResponseToSend.getOverallData());
                     break;
                 case "GAME_CREATE_REQ":
-                    ResponseMessage gameCreateResponse = clientFacade.handleGameCreateRequest();
-                    sendMessage(gameCreateResponse.getOverallData());
-                    if (gameCreateResponse.getStatus().equals("OK")) {
-                        ResponseMessage gameStartResponse = clientFacade.handleGameStart();
-                        sendMessage(gameStartResponse.getOverallData());
-                    }
+                    new Thread(() -> handleGameCreateRequest(message)).start();
                     break;
                 case "GAME_JOIN_REQ":
-                    ResponseMessage joinResponse = clientFacade.handleGameJoinRequest(this.username);
-                    sendMessage(joinResponse.getOverallData());
+                    new Thread(() -> handleGameJoinRequest(message)).start();
+                    break;
+                case "GUESS_NUMBER":
+                    Message guessMessage = clientFacade.handleGameGuess(message);
+                    sendMessage(guessMessage.getOverallData());
                     break;
                 case "FILE_TRANSFER_REQ":
                     String fileReceiverUsername = Utility.extractParameterFromJson(message, "username");
@@ -110,9 +108,8 @@ public class ClientHandler implements Runnable {
                     ResponseMessage fileTransferRequestMessage = clientFacade.handleFileTransferRequest(fileTransferREQMessage);
                     sendMessage(fileTransferRequestMessage.getOverallData());
                     break;
-                case "GUESS_NUMBER":
-                    Message guessMessage = clientFacade.handleGameGuess(message);
-                    sendMessage(guessMessage.getOverallData());
+                case "FILE_RECEIVE_RESP":
+                    handleFileReceiveResponse(message);
                     break;
                 default:
                     System.out.println(message);
@@ -156,7 +153,7 @@ public class ClientHandler implements Runnable {
                     sendMessage(pingMessage.getOverallData());
 
                     // Wait for 3 seconds for PONG response
-                    Thread.sleep(5000);
+                    Thread.sleep(3000);
                     if (!receivedPong.get()) {
                         DisconnectMessage disconnectMessage = new DisconnectMessage("7000");
                         sendMessage(disconnectMessage.getOverallData());
@@ -197,6 +194,29 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             System.err.println("Error sending message to client: " + e.getMessage());
             closeConnection();
+        }
+    }
+    private void handleGameCreateRequest(String message) {
+        ResponseMessage gameCreateResponse = clientFacade.handleGameCreateRequest();
+        sendMessage(gameCreateResponse.getOverallData());
+        if (gameCreateResponse.getStatus().equals("OK")) {
+            ResponseMessage gameStartResponse = clientFacade.handleGameStart();
+            sendMessage(gameStartResponse.getOverallData());
+        }
+    }
+    private void handleGameJoinRequest(String message) {
+        ResponseMessage joinResponse = clientFacade.handleGameJoinRequest(this.username);
+        sendMessage(joinResponse.getOverallData());
+    }
+
+    private void handleFileReceiveResponse(String message) {
+        String response = Utility.extractParameterFromJson(message, "response");
+        if ("1".equals(response)) {
+            System.out.println("File transfer accepted by " + username);
+        } else if ("-1".equals(response)) {
+            System.out.println("File transfer rejected by " + username);
+        } else {
+            System.out.println("Invalid file transfer response received from " + username);
         }
     }
 
