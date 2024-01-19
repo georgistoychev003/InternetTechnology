@@ -147,7 +147,9 @@ public class ClientInput implements Runnable {
         sendFileReceiveResponse(responseCode);
 
         if (response.equalsIgnoreCase("yes")) {
-            initiateFileTransfer();
+            // step 1: send to server that you accept the message
+
+//            initiateFileTransfer();
         }
     }
 
@@ -179,6 +181,7 @@ public class ClientInput implements Runnable {
 
             // Include sender/receiver indicator, UUID, and checksum in the file content
             outputStream.write('S');
+            // TODO change this to make sure the Sender and Receiver both use the same UUID (they agree on one in the protocol step)
             outputStream.write(UUID.randomUUID().toString().getBytes());
             String checksum = calculateMD5Checksum(filePath);
             System.out.println("Checksum: " + checksum);
@@ -195,6 +198,7 @@ public class ClientInput implements Runnable {
     }
 
     private String calculateMD5Checksum(String filePath) throws IOException {
+        // TODO use a way to generate a checksum using the FileStream
         byte[] data = Files.readAllBytes(Paths.get(filePath));
         byte[] hash;
         try {

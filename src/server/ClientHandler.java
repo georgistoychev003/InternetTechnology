@@ -211,6 +211,8 @@ public class ClientHandler implements Runnable {
 
     private void handleFileReceiveResponse(String message) {
         String response = Utility.extractParameterFromJson(message, "response");
+        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(response);
+        sendMessage(responseMessage.getOverallData());
         if ("1".equals(response)) {
             System.out.println("File transfer accepted by " + username);
         } else if ("-1".equals(response)) {

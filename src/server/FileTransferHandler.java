@@ -24,12 +24,12 @@ public class FileTransferHandler implements Runnable {
             char indicatorChar = (char) indicator;
 
             // Read UUID
-            byte[] uuidBytes = new byte[30];
+            byte[] uuidBytes = new byte[36];
             dataInputStream.readFully(uuidBytes);
             String uuid = new String(uuidBytes);
 
             // Read checksum
-            byte[] checksumBytes = new byte[38];
+            byte[] checksumBytes = new byte[32];
             dataInputStream.readFully(checksumBytes);
             String checksum = new String(checksumBytes);
 

@@ -123,6 +123,10 @@ public class ServerInput implements Runnable {
                     EndGameMessage endGameMessage = new EndGameMessage(gameResults);
                     System.out.println(MessageHandler.determineMessagePrintContents(endGameMessage));
                 }
+                case "FILE_RECEIVE_RESP" -> {
+                    FileReceiveResponseMessage fileReceiveResponse = mapper.readValue(body, FileReceiveResponseMessage.class);
+                    System.out.println("Response: " + fileReceiveResponse);
+                }
                 default -> System.out.println(command + " Response: " + response);
             }
         }
