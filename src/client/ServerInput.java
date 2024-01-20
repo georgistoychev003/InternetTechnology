@@ -6,15 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import messages.*;
 import utils.Utility;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
@@ -23,6 +26,8 @@ public class ServerInput implements Runnable {
     private BufferedReader input;
     private PrintWriter output;
     private ObjectMapper mapper;
+    private Socket fileTransferSocket;
+
 
 
     public ServerInput(Socket socket) throws IOException {
@@ -123,15 +128,37 @@ public class ServerInput implements Runnable {
                     EndGameMessage endGameMessage = new EndGameMessage(gameResults);
                     System.out.println(MessageHandler.determineMessagePrintContents(endGameMessage));
                 }
+                case "FILE_RECEIVE_REQ" -> {
+                    String fileSender = Utility.extractParameterFromJson(response, "sender");
+                    String fileReceiver = Utility.extractParameterFromJson(response, "receiver");
+                    String fileName = Utility.extractParameterFromJson(response, "fileName");
+                    FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_RECEIVE_REQ", fileSender, fileReceiver, fileName);
+                    System.out.println(fileSender + " wants to send you file named \"" + fileName + "\"");
+                    System.out.println("Type help to see how to respond to that request");
+                }
                 case "FILE_RECEIVE_RESP" -> {
+                    String myUsername = Utility.extractParameterFromJson(response, "sender");
                     String fileResp = Utility.extractParameterFromJson(response, "response");
-                    FileReceiveResponseMessage fileReceiveResponse = new FileReceiveResponseMessage(fileResp);
-                    System.out.println("Response: " + fileReceiveResponse);
+                    String uuid = Utility.extractParameterFromJson(response, "uuid");
+                    FileReceiveResponseMessage fileReceiveResponse = new FileReceiveResponseMessage(myUsername, fileResp, uuid);
+                    handleFileTransfer(fileReceiveResponse);
                 }
                 default -> System.out.println(command + " Response: " + response);
             }
         }
     }
+
+    private void handleFileTransfer(FileReceiveResponseMessage fileReceiveResponse) {
+        if (fileReceiveResponse.getResponse().equals("1")){
+
+            FileTransfer fileTransfer = Client.getFileTransfersMap().get(fileReceiveResponse.getSender());
+            fileTransfer.setUuid(fileReceiveResponse.getUuid());
+            Client.addFileTransferRequest(fileTransfer);
+            Client.getFileTransfersMap().get(fileReceiveResponse.getSender()).initiateFileTransfer();
+        }
+    }
+
+
 
 
     private void sendToServer(String message) {

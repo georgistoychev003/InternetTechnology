@@ -91,6 +91,23 @@ public class ClientFacade {
         }
     }
 
+    public FileReceiveResponseMessage handleFileReceiveResponse(String message) {
+        String fileSender = Utility.extractParameterFromJson(message, "sender");
+        String response = Utility.extractParameterFromJson(message, "response");
+        String uuid = Utility.extractParameterFromJson(message, "uuid");
+        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(fileSender,response, uuid);
+        ClientHandler recipientHandler = Server.getLoggedInUsers().get(responseMessage.getSender());
+        recipientHandler.sendMessage(responseMessage.getOverallData());
+        return responseMessage;
+//        if ("1".equals(response)) {
+//            System.out.println("File transfer accepted by " + username);
+//        } else if ("-1".equals(response)) {
+//            System.out.println("File transfer rejected by " + username);
+//        } else {
+//            System.out.println("Invalid file transfer response received from " + username);
+//        }
+    }
+
     public ResponseMessage handleGameCreateRequest() {
         if (clientHandler.getUsername() == null) {
             // User is not logged in
@@ -137,7 +154,7 @@ public class ClientFacade {
 
     public ResponseMessage handleFileTransferRequest(FileTransferREQMessage fileTransferREQMessage) {
         String senderUsername = clientHandler.getUsername();
-        String receiverUsername = fileTransferREQMessage.getUsername();
+        String receiverUsername = fileTransferREQMessage.getReceiver();
 
         // Check if the sender is logged in
         if (senderUsername == null) {
@@ -151,16 +168,16 @@ public class ClientFacade {
         }
 
 
-        FileTransferREQMessage fileReceiveReqMessage = new FileTransferREQMessage("FILE_RECEIVE_REQ", senderUsername, fileTransferREQMessage.getFileName());
+        FileTransferREQMessage fileReceiveReqMessage = new FileTransferREQMessage("FILE_RECEIVE_REQ", senderUsername, receiverUsername, fileTransferREQMessage.getFileName());
         receiverHandler.sendMessage(fileReceiveReqMessage.getOverallData());
 
 
         return new ResponseMessage("FILE_TRANSFER_RESP", "OK");
     }
-
 //    public Message handleGameGuess(String message) {
 //        String number = Utility.extractParameterFromJson(message, "number");
 //        return getGuessingGame().checkGuess(number);
+
 //    }
 
     public Message handleGameGuess(String message) {
@@ -181,6 +198,5 @@ public class ClientFacade {
     private GuessingGame getGuessingGame() {
         return GuessingGame.getInstance();
     }
-
 
 }

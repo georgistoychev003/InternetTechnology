@@ -2,7 +2,9 @@ package client;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Client {
     private static final String SERVER_ADDRESS = "127.0.0.1";
@@ -10,7 +12,7 @@ public class Client {
     private static final int FILE_TRANSFER_PORT = 1338;
 
     private Socket socket;
-    private Socket fileTransferSocket;
+    private static HashMap<String, FileTransfer> fileTransfersMap = new HashMap<>();
     private Scanner scanner;
 
     public Client() {
@@ -40,8 +42,19 @@ public class Client {
         }
     }
 
+    public static void addFileTransferRequest(FileTransfer fileTransfer) {
+        fileTransfersMap.put(fileTransfer.getSender(), fileTransfer);
+    }
 
-//TODO : ask if this method should exist
+    public static void setUUIDToFileTransfer(String uuid) {
+
+    }
+
+    public static HashMap<String, FileTransfer> getFileTransfersMap() {
+        return fileTransfersMap;
+    }
+
+    //TODO : ask if this method should exist
 //    private void closeSockets() {
 //        try {
 //            if (output != null) output.close();

@@ -25,7 +25,6 @@ public class ClientInput implements Runnable {
     private PrintWriter output;
     private Scanner scanner;
     private ObjectMapper mapper;
-    private Socket fileTransferSocket;
     private String username;
 
     public ClientInput(Socket socket) throws IOException {
@@ -54,9 +53,9 @@ public class ClientInput implements Runnable {
                 handleGameJoin();
             } else if (userInput.startsWith("game guess ")) {
                 handleGameGuess(userInput);
-            } else if(userInput.startsWith("transfer file ")){
+            } else if(userInput.startsWith("file transfer ")){
                 handleFileTransfer(userInput);
-            } else if (userInput.startsWith("file receive response ")) {
+            } else if (userInput.startsWith("file receive ")) {
                 handleFileReceiveResponseCommand(userInput);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
@@ -126,92 +125,48 @@ public class ClientInput implements Runnable {
         }
 
         String fileReceiverUsername = parts[2];
-        String fileName = parts[3];
+        String filePath = parts[3];
 
-        sendFileTransferRequest(fileReceiverUsername, fileName);
+        // Create class to store the file transfer data
+        FileTransfer fileTransfer = new FileTransfer(username, fileReceiverUsername, new File(filePath));
+        Client.addFileTransferRequest(fileTransfer);
+
+        //Send a request only containing the file name
+        sendFileTransferRequest(fileReceiverUsername, fileTransfer.getFile().getName());
     }
 
     private void handleFileReceiveResponseCommand(String userInput) {
         // Expecting input in the format: "file receive response <Yes/No>"
         String[] parts = userInput.split(" ", 4);
         if (parts.length < 4) {
-            System.out.println("Invalid command. Use: file receive response <Yes/No>");
+            System.out.println("Invalid command. Use: file receive <senderUsername> <Yes/No>");
             return;
         }
+        String sender = parts[2].trim();
         String response = parts[3].trim().toLowerCase();
         if (!response.equalsIgnoreCase("yes") && !response.equalsIgnoreCase("no")) {
             System.out.println("Invalid response. Please respond with 'Yes' or 'No'.");
             return;
         }
         String responseCode = response.equalsIgnoreCase("yes") ? "1" : "-1";
-        sendFileReceiveResponse(responseCode);
-
+        String uuid = "";
         if (response.equalsIgnoreCase("yes")) {
             // step 1: send to server that you accept the message
-
+            uuid = UUID.randomUUID().toString();
 //            initiateFileTransfer();
         }
+        sendFileReceiveResponse(sender, responseCode, uuid);
     }
 
-    private void sendFileReceiveResponse(String responseCode) {
-        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(responseCode);
+    private void sendFileReceiveResponse(String sender, String responseCode, String uuid) {
+        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(sender,responseCode, uuid);
         sendToServer(responseMessage.getOverallData());
     }
 
-    private void initiateFileTransfer() {
-        try {
-            // Connect to the file transfer server
-            fileTransferSocket = new Socket( "127.0.0.1", 1338);
 
-            // Send the file content to the server
-            sendFileContent();
-
-            // Close the file transfer socket
-            fileTransferSocket.close();
-        } catch (IOException e) {
-            System.err.println("Exception during file transfer initiation: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void sendFileContent() {
-        String filePath = "src/file.txt";
-        try (FileInputStream fileInputStream = new FileInputStream(filePath);
-             OutputStream outputStream = fileTransferSocket.getOutputStream()) {
-
-            // Include sender/receiver indicator, UUID, and checksum in the file content
-            outputStream.write('S');
-            // TODO change this to make sure the Sender and Receiver both use the same UUID (they agree on one in the protocol step)
-            outputStream.write(UUID.randomUUID().toString().getBytes());
-            String checksum = calculateMD5Checksum(filePath);
-            System.out.println("Checksum: " + checksum);
-            System.out.println("Checksum length: " + checksum.length());
-            outputStream.write(checksum.getBytes());
-
-            long bytesTransferred = fileInputStream.transferTo(fileTransferSocket.getOutputStream());
-
-            System.out.println("File Transfer Complete. Bytes Transferred: " + bytesTransferred);
-        } catch (IOException e) {
-            System.err.println("Exception during file content transfer: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private String calculateMD5Checksum(String filePath) throws IOException {
-        // TODO use a way to generate a checksum using the FileStream
-        byte[] data = Files.readAllBytes(Paths.get(filePath));
-        byte[] hash;
-        try {
-            hash = MessageDigest.getInstance("MD5").digest(data);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-        String checksum = new BigInteger(1, hash).toString(16);
-        return checksum;
-    }
 
     private void sendFileTransferRequest(String receiver, String fileName) {
-        FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", receiver, fileName);
+        FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", this.username, receiver, fileName);
         sendToServer(fileTransferREQMessage.getOverallData());
     }
 
@@ -224,8 +179,8 @@ public class ClientInput implements Runnable {
         System.out.println("game create - Creates a number guessing game");
         System.out.println("game join - Join the number guessing game");
         System.out.println("game guess <number> - Attempt to guess the secret number in the Guessing Game");
-        System.out.println("transfer file <username> <filename> - request to transfer a file to a user by providing the recepeint's username and a filename");
-        System.out.println("file receive response <yes/no> - accept/decline a file that a user wants to transfer to you");
+        System.out.println("file transfer <username> <filePath> - request to transfer a file to a user by providing the recepeint's username and a filename");
+        System.out.println("file receive <fileSenderUsername> <yes/no> - accept/decline a file that a user wants to transfer to you");
         System.out.println("logout - Logout from the server");
     }
 

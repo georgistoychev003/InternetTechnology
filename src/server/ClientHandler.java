@@ -102,14 +102,15 @@ public class ClientHandler implements Runnable {
                     sendMessage(guessMessage.getOverallData());
                     break;
                 case "FILE_TRANSFER_REQ":
-                    String fileReceiverUsername = Utility.extractParameterFromJson(message, "username");
+                    String fileSenderUsername = Utility.extractParameterFromJson(message, "sender");
+                    String fileReceiverUsername = Utility.extractParameterFromJson(message, "receiver");
                     String fileName = Utility.extractParameterFromJson(message, "fileName");
-                    FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", fileReceiverUsername, fileName);
+                    FileTransferREQMessage fileTransferREQMessage = new FileTransferREQMessage("FILE_TRANSFER_REQ", fileSenderUsername, fileReceiverUsername, fileName);
                     ResponseMessage fileTransferRequestMessage = clientFacade.handleFileTransferRequest(fileTransferREQMessage);
                     sendMessage(fileTransferRequestMessage.getOverallData());
                     break;
                 case "FILE_RECEIVE_RESP":
-                    handleFileReceiveResponse(message);
+                    clientFacade.handleFileReceiveResponse(message);
                     break;
                 default:
                     System.out.println(message);
@@ -209,18 +210,7 @@ public class ClientHandler implements Runnable {
         sendMessage(joinResponse.getOverallData());
     }
 
-    private void handleFileReceiveResponse(String message) {
-        String response = Utility.extractParameterFromJson(message, "response");
-        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(response);
-        sendMessage(responseMessage.getOverallData());
-        if ("1".equals(response)) {
-            System.out.println("File transfer accepted by " + username);
-        } else if ("-1".equals(response)) {
-            System.out.println("File transfer rejected by " + username);
-        } else {
-            System.out.println("Invalid file transfer response received from " + username);
-        }
-    }
+
 
     private void closeConnection() {
         try {
