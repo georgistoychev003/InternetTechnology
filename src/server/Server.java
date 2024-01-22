@@ -7,6 +7,8 @@ import messages.ResponseMessage;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
@@ -42,11 +44,18 @@ public class Server {
     }
 
     private void handleFileTransferConnections() {
+        List<FileTransferHandler> connectedClients = new ArrayList<>();
         try {
             while (!fileTransferServerSocket.isClosed()) {
-                Socket fileTransferSocket = fileTransferServerSocket.accept();
-                System.out.println("File transfer connection accepted: " + fileTransferSocket.getInetAddress().getHostAddress());
-                FileTransferHandler fileTransferHandler = new FileTransferHandler(fileTransferSocket);
+                Socket receiverSocket = fileTransferServerSocket.accept();
+                Socket senderSocket = fileTransferServerSocket.accept();
+                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostAddress());
+                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostAddress());
+                System.out.println("File transfer connection accepted 1: " + senderSocket.getLocalPort());
+                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostName());
+                System.out.println("File transfer connection accepted 2: " + receiverSocket.getLocalPort());
+                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostName());
+                FileTransferHandler fileTransferHandler = new FileTransferHandler(senderSocket, receiverSocket);
                 new Thread(fileTransferHandler).start();
             }
         } catch (IOException e) {

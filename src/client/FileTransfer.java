@@ -46,15 +46,15 @@ public class FileTransfer {
     }
 
     private void sendFileContent() {
-        String filePath = "src/file.txt";
-        try (FileInputStream fileInputStream = new FileInputStream(filePath);
+        String filePath = file.getPath();
+        try (FileInputStream fileInputStream = new FileInputStream(file);
              OutputStream outputStream = fileTransferSocket.getOutputStream()) {
 
             // Include sender/receiver indicator, UUID, and checksum in the file content
             outputStream.write('S');
             // TODO change this to make sure the Sender and Receiver both use the same UUID (they agree on one in the protocol step)
             outputStream.write(uuid.getBytes());
-            String checksum = calculateMD5Checksum(filePath);
+            String checksum = calculateMD5Checksum(file);
             System.out.println("Checksum: " + checksum);
             System.out.println("Checksum length: " + checksum.length());
             outputStream.write(checksum.getBytes());
@@ -68,9 +68,9 @@ public class FileTransfer {
         }
     }
 
-    public static String calculateMD5Checksum(String filePath) throws IOException {
+    public static String calculateMD5Checksum(File file) throws IOException {
         // TODO use a way to generate a checksum using the FileStream
-        try (FileInputStream fis = new FileInputStream(filePath); FileChannel channel = fis.getChannel()) {
+        try (FileInputStream fis = new FileInputStream(file); FileChannel channel = fis.getChannel()) {
             MessageDigest md = MessageDigest.getInstance("MD5");
             ByteBuffer buffer = ByteBuffer.allocate(8192);
 

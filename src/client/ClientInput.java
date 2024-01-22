@@ -9,6 +9,7 @@ import messages.PrivateMessage;
 
 import java.io.*;
 import java.math.BigInteger;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -26,6 +27,7 @@ public class ClientInput implements Runnable {
     private Scanner scanner;
     private ObjectMapper mapper;
     private String username;
+    private Socket fileTransferSocket;
 
     public ClientInput(Socket socket) throws IOException {
         this.socket = socket;
@@ -153,9 +155,43 @@ public class ClientInput implements Runnable {
         if (response.equalsIgnoreCase("yes")) {
             // step 1: send to server that you accept the message
             uuid = UUID.randomUUID().toString();
-//            initiateFileTransfer();
+
         }
         sendFileReceiveResponse(sender, responseCode, uuid);
+
+        if (response.equalsIgnoreCase("yes")){
+            try {
+                fileTransferSocket = new Socket( "127.0.0.1", 1338);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            handleFileReceive(sender, uuid);
+        }
+    }
+
+    private void handleFileReceive(String sender, String uuid) {
+        try {
+            // Read file content
+            DataInputStream dataInputStream = new DataInputStream(fileTransferSocket.getInputStream());
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            while ((bytesRead = dataInputStream.read(buffer)) != -1) {
+                byteArrayOutputStream.write(buffer, 0, bytesRead);
+            }
+
+            // Save the file
+            String fileName = uuid + ".txt"; // Adjust the file name based on your protocol
+            try (FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
+                fileOutputStream.write(byteArrayOutputStream.toByteArray());
+                System.out.println("File received and saved: " + fileName);
+            }
+        } catch (IOException e) {
+            System.err.println("Exception during file transfer handling: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void sendFileReceiveResponse(String sender, String responseCode, String uuid) {

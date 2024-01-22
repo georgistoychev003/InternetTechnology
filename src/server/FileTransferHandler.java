@@ -1,24 +1,28 @@
 package server;
 
+import client.FileTransfer;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.UUID;
 
 public class FileTransferHandler implements Runnable {
-    private Socket clientSocket;
+    private Socket senderSocket;
+    private Socket receiverSocket;
 
-    public FileTransferHandler(Socket clientSocket) {
-        this.clientSocket = clientSocket;
+    public FileTransferHandler(Socket senderSocket, Socket receiverSocket) {
+        this.senderSocket = senderSocket;
+        this.receiverSocket = receiverSocket;
     }
 
     @Override
     public void run() {
         try {
-            System.out.println("File transfer connection established with: " + clientSocket.getInetAddress().getHostAddress());
+            System.out.println("File transfer connection established with: " + senderSocket.getInetAddress().getHostAddress());
 
             // Receive file transfer details
-            DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
-
+            DataInputStream dataInputStream = new DataInputStream(senderSocket.getInputStream());
+            OutputStream outputStream = receiverSocket.getOutputStream();
             // Read the sender/receiver indicator
             byte indicator = dataInputStream.readByte();
             char indicatorChar = (char) indicator;
@@ -47,20 +51,29 @@ public class FileTransferHandler implements Runnable {
             System.out.println("UUID: " + uuid);
             System.out.println("Checksum: " + checksum);
 
-            // Save the file
-            String fileName = uuid + ".txt";
-            try (FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
-                fileOutputStream.write(byteArrayOutputStream.toByteArray());
-                System.out.println("File saved: " + fileName);
-            }
+            outputStream.write(indicator);
+            outputStream.write(uuidBytes);
+            outputStream.write(checksumBytes);
+
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+
+            long bytesTransferred = byteArrayInputStream.transferTo(receiverSocket.getOutputStream());
+            System.out.println("Bytes transferred to receiver: " + bytesTransferred);
+
+//            // Save the file
+//            String fileName = uuid + ".txt";
+//            try (FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
+//                fileOutputStream.write(byteArrayOutputStream.toByteArray());
+//                System.out.println("File saved: " + fileName);
+//            }
 
         } catch (IOException e) {
             System.err.println("Exception during file transfer handling: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {
-                if (clientSocket != null && !clientSocket.isClosed()) {
-                    clientSocket.close();
+                if (senderSocket != null && !senderSocket.isClosed()) {
+                    senderSocket.close();
                     System.out.println("File transfer connection closed.");
                 }
             } catch (IOException e) {
