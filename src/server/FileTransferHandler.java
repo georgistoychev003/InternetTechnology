@@ -60,12 +60,12 @@ public class FileTransferHandler implements Runnable {
             long bytesTransferred = byteArrayInputStream.transferTo(receiverSocket.getOutputStream());
             System.out.println("Bytes transferred to receiver: " + bytesTransferred);
 
-//            // Save the file
-//            String fileName = uuid + ".txt";
-//            try (FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
-//                fileOutputStream.write(byteArrayOutputStream.toByteArray());
-//                System.out.println("File saved: " + fileName);
-//            }
+            // Signal that transfer finished
+            //TODO : this is written to the actual file so find a better way to signal
+            outputStream.write(0);
+            outputStream.flush();
+            outputStream.close();
+
 
         } catch (IOException e) {
             System.err.println("Exception during file transfer handling: " + e.getMessage());
