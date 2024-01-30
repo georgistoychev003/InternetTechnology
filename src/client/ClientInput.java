@@ -2,10 +2,7 @@ package client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import messages.FileReceiveResponseMessage;
-import messages.FileTransferREQMessage;
-import messages.GameGuessMessage;
-import messages.PrivateMessage;
+import messages.*;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -26,11 +23,15 @@ public class ClientInput implements Runnable {
     private BufferedReader input;
     private PrintWriter output;
     private Scanner scanner;
+    private Client client;
     private ObjectMapper mapper;
     private String username;
+    String receiverUsernameForEncryption;
+
     private Socket fileTransferSocket;
 
-    public ClientInput(Socket socket) throws IOException {
+    public ClientInput(Client client,Socket socket) throws IOException {
+        this.client = client;
         this.socket = socket;
         input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         output = new PrintWriter(socket.getOutputStream(), true);
@@ -60,6 +61,8 @@ public class ClientInput implements Runnable {
                 handleFileTransfer(userInput);
             } else if (userInput.startsWith("file receive ")) {
                 handleFileReceiveResponseCommand(userInput);
+            } else if(userInput.startsWith("encrypted private ")){
+                handleEncryptedPrivateMessageCommand(userInput);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
                 break;
@@ -98,6 +101,30 @@ public class ClientInput implements Runnable {
         String message = parts[2];
         sendPrivateMessageRequest(senderUsername, receiverUsername, message);
     }
+
+    private void handleEncryptedPrivateMessageCommand(String userInput) {
+        //split the input into three segments: the command, the target username, and the message itself
+        String[] parts = userInput.split(" ", 4);
+        if (parts.length < 4) {
+            System.out.println("Invalid command. Use: encrypted private <username> <message>");
+            return;
+        }
+        String receiverUsername = parts[2];
+        this.receiverUsernameForEncryption = receiverUsername; // store the receiver username
+        String message = parts[3];
+
+        // Store the message locally
+        client.storeEncryptedMessage(receiverUsername, message);
+
+        // Request server for the recipient's public key
+        sendPublicKeyRequest(receiverUsername);
+    }
+
+    private void sendPublicKeyRequest(String receiverUsername) {
+        PublicKeyRequestMessage publicKeyRequest = new PublicKeyRequestMessage(receiverUsername);
+        sendToServer(publicKeyRequest.getOverallData());
+    }
+
 
     private void sendPrivateMessageRequest(String sender, String receiver, String message) {
         PrivateMessage privateMessage = new PrivateMessage("PRIVATE_MESSAGE_REQ", sender, receiver, message);
@@ -314,6 +341,7 @@ public class ClientInput implements Runnable {
         System.out.println("game guess <number> - Attempt to guess the secret number in the Guessing Game");
         System.out.println("file transfer <username> <filePath> - request to transfer a file to a user by providing the recepeint's username and a file path");
         System.out.println("file receive <fileSenderUsername> <yes/no> - accept/decline a file that a user wants to transfer to you");
+        System.out.println("encrypted private <username> <message> - send an encrypted private message to a user");
         System.out.println("logout - Logout from the server");
     }
 
@@ -335,6 +363,13 @@ public class ClientInput implements Runnable {
         loginNode.put("username", username);
         this.username = username;
         sendToServer("LOGIN", loginNode);
+        sendPublicKey();
+    }
+
+    private void sendPublicKey() {
+        String publicKey = this.client.getEncodedPublicKey();
+        PublicKeyMessage publicKeyMessage = new PublicKeyMessage(this.username, publicKey);
+        sendToServer(publicKeyMessage.getOverallData());
     }
 
     private void sendBroadcastRequest(String message) {
@@ -354,6 +389,9 @@ public class ClientInput implements Runnable {
     }
     public boolean isLoggedIn() {
         return username != null;
+    }
+    public String getReceiverUsernameForEncryption() {
+        return this.receiverUsernameForEncryption;
     }
 
     @Override

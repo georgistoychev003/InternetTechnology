@@ -194,6 +194,39 @@ public class ClientFacade {
         return getGuessingGame().checkGuess(number, username);
     }
 
+    public PublicKeyResponseMessage handlePublicKeyRequest(String targetUsername) {
+        String publicKey = Server.getPublicKey(targetUsername);
+        if (publicKey != null) {
+            // Successful response with public key
+            return new PublicKeyResponseMessage("OK", publicKey, null);
+        } else {
+            // Error response if user not found or user has no public key
+            return new PublicKeyResponseMessage("ERROR", null, "11000");
+        }
+    }
+
+    public void handleSessionKeyExchange(SessionKeyExchangeRequestMessage requestMessage, String senderUsername) {
+        String receiverUsername = requestMessage.getReceiverUsername();
+        String encryptedSessionKey = requestMessage.getEncryptedSessionKey();
+
+        ClientHandler receiverHandler = Server.getLoggedInUsers().get(receiverUsername);
+        if (receiverHandler != null) {
+            // Forward the encrypted session key to the intended recipient
+            SessionKeyExchangeRequestMessage forwardMessage = new SessionKeyExchangeRequestMessage(senderUsername, encryptedSessionKey);
+            receiverHandler.sendMessage(forwardMessage.getOverallData());
+
+            // Respond to the sender with a success message
+            ResponseMessage responseToSender = new ResponseMessage("SESSION_KEY_EXCHANGE_RESP", "OK");
+            clientHandler.sendMessage(responseToSender.getOverallData());
+        } else {
+            // Recipient not found
+            ResponseMessage errorResponse = new ResponseMessage("SESSION_KEY_EXCHANGE_RESP", "ERROR", "11001");
+            clientHandler.sendMessage(errorResponse.getOverallData());
+        }
+    }
+
+
+
 
     private GuessingGame getGuessingGame() {
         return GuessingGame.getInstance();

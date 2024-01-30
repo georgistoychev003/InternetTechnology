@@ -2,6 +2,8 @@ package server;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -42,10 +44,12 @@ public class ClientHandler implements Runnable {
             sendMessage(welcomeMessage.getOverallData());
 
             String line;
-            while (running.get() && (line = reader.readLine()) != null) {
+            while (running.get() && !clientSocket.isClosed() && (line = reader.readLine()) != null) {
                 processClientMessage(line);
             }
-        } catch (Exception e) {
+        } catch (SocketException e) {
+            System.out.println("Client disconnected: " + e.getMessage());
+        } catch (IOException e) {
             e.printStackTrace();
         } finally {
             closeConnection();
@@ -112,6 +116,22 @@ public class ClientHandler implements Runnable {
                 case "FILE_RECEIVE_RESP":
                     clientFacade.handleFileReceiveResponse(message);
                     break;
+                case "PUBLIC_KEY":
+                    String username = Utility.extractParameterFromJson(message, "username");
+                    String publicKey = Utility.extractParameterFromJson(message, "public_key");
+                    handlePublicKey(username, publicKey);
+                    break;
+                case "PUBLIC_KEY_REQ":
+                    String targetUsername = Utility.extractParameterFromJson(message, "targetUsername");
+                    PublicKeyResponseMessage publicKeyResponse = clientFacade.handlePublicKeyRequest(targetUsername);
+                    sendMessage(publicKeyResponse.getOverallData());
+                    break;
+                case "SESSION_KEY_EXCHANGE_REQ":
+                    String usernameOfReceiver = Utility.extractParameterFromJson(message, "receiver");
+                    String encryptedSessionKey = Utility.extractParameterFromJson(message, "encrypted_session_key");
+                    SessionKeyExchangeRequestMessage requestMessage = new SessionKeyExchangeRequestMessage(usernameOfReceiver, encryptedSessionKey);
+                    clientFacade.handleSessionKeyExchange(requestMessage, this.username);
+                    break;
                 default:
                     System.out.println(message);
                     sendMessage("UNKNOWN_COMMAND");
@@ -143,6 +163,19 @@ public class ClientHandler implements Runnable {
         // Close the connection
         closeConnection();
     }
+    private void handlePublicKey(String username, String publicKey) {
+        try {
+            if (username != null && publicKey != null) {
+                Server.storePublicKey(username, publicKey);
+                System.out.println("Stored public key for user " + username);
+            } else {
+                System.out.println("Invalid public key data for user: " + username);
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling public key: " + e.getMessage());
+        }
+    }
+
 
     private void startHeartbeat() {
         new Thread(() -> {
@@ -212,7 +245,7 @@ public class ClientHandler implements Runnable {
 
 
 
-    private void closeConnection() {
+        private void closeConnection() {
         try {
             if (inputStream != null) inputStream.close();
             if (outputStream != null) outputStream.close();

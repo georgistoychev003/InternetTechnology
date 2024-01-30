@@ -13,6 +13,7 @@ public class ResponseHandler {
                 case "GAME_JOIN_RESP" -> "You successfully joined the game.";
                 case "GAME_START_RESP" -> "Game is starting. Guessing range is 1 - 50. Good luck!";
                 case "FILE_TRANSFER_RESP" -> "Your file transfer request was sent to the desired recipient. The recipient can accept or decline your request!";
+                case "SESSION_KEY_EXCHANGE_RESP" -> "Your session key was successfully distributed to the recipient";
                 default -> "Response message could not be determined";
             };
         } else {
@@ -42,6 +43,8 @@ public class ResponseHandler {
             case "9008" -> "You cannot join the game twice";
             case "9009" -> "Cannot start a game before creating one";
             case "9010" -> "You have already guessed the number";
+            case "11000" -> "User not found or user has no public key.";
+            case "11001" -> "User not found during session key exchange";
             default -> "Action failed with error code: " + responseMessage.getCode();
         };
     }

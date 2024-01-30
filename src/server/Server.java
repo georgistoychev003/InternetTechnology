@@ -17,6 +17,7 @@ public class Server {
     private ServerSocket serverSocket;
     private ServerSocket fileTransferServerSocket;
     private static ConcurrentHashMap<String, ClientHandler> loggedInUsers = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, String> publicKeys = new ConcurrentHashMap<>();
     public static final String VERSION = "1.0";
 
     public void startServer() {
@@ -115,6 +116,13 @@ public class Server {
                 clientHandler.sendMessage(message.getOverallData());
             }
         });
+    }
+    public static void storePublicKey(String username, String publicKey) {
+        publicKeys.put(username, publicKey);
+    }
+
+    public static String getPublicKey(String username) {
+        return publicKeys.get(username);
     }
 
 
