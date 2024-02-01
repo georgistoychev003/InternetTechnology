@@ -90,29 +90,6 @@ public class Server {
                     }
                 }
 
-//                Socket secondSocket = fileTransferServerSocket.accept();
-//                DataInputStream dataInputStream2 = new DataInputStream(secondSocket.getInputStream());
-//                Socket senderSocket;
-//                Socket receiverSocket;
-//                if ((char)dataInputStream1.readByte() == 'S') {
-//                    senderSocket = firstSocket;
-//                } else if ((char)dataInputStream1.readByte() == 'R') {
-//                    receiverSocket = firstSocket;
-//                }
-//
-//                if ((char)dataInputStream2.readByte() == 'S') {
-//                    senderSocket = secondSocket;
-//                } else if ((char)dataInputStream2.readByte() == 'R') {
-//                    receiverSocket = secondSocket;
-//                }
-////                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostAddress());
-////                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostAddress());
-////                System.out.println("File transfer connection accepted 1: " + senderSocket.getLocalPort());
-////                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostName());
-////                System.out.println("File transfer connection accepted 2: " + receiverSocket.getLocalPort());
-////                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostName());
-//                FileTransferHandler fileTransferHandler = new FileTransferHandler(senderSocket, receiverSocket);
-//                new Thread(fileTransferHandler).start();
             }
         } catch (IOException e) {
             System.out.println("An error occurred in the file transfer server: " + e.getMessage());

@@ -35,7 +35,7 @@ public class Client {
 
 
             ClientInput clientInput = new ClientInput(this,socket);
-            ServerInput serverInput = new ServerInput(socket, clientInput);
+            ServerInput serverInput = new ServerInput(this.socket);
             Thread serverThread = new Thread(serverInput);
             Thread clientThread = new Thread(clientInput);
 

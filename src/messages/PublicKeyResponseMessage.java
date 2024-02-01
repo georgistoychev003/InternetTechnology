@@ -1,41 +1,40 @@
 package messages;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class PublicKeyResponseMessage extends ResponseMessage {
 
     private String responseType = "PUBLIC_KEY_RESP";
-    private String status;
+    private String username;
     private String publicKey; // Can be null in error scenarios
-    private String errorCode;
 
-    public PublicKeyResponseMessage(String status, String publicKey, String errorCode) {
-        this.status = status;
+    public PublicKeyResponseMessage(String username, String publicKey) {
+        this.username = username;
         this.publicKey = publicKey;
-        this.errorCode = errorCode;
         setOverallData(determineMessageContents());
     }
 
     private String determineMessageContents() {
-        ObjectNode node = getMapper().createObjectNode();
-        node.put("status", status);
+        String overallData = responseType;
+        JsonNode node = getMapper().createObjectNode()
+                .put("username", username)
+                .put("publicKey", publicKey);
 
-        if ("OK".equals(status) && publicKey != null) {
-            node.put("publicKey", publicKey);
-        } else if ("ERROR".equals(status)) {
-            node.put("code", errorCode != null ? errorCode : "");
-        }
 
-        return responseType + " " + node.toString();
+        overallData += " " + node.toString();
+        return overallData;
     }
 
     // Getters and setters
-    public String getStatus() {
-        return status;
+
+
+    public String getUsername() {
+        return username;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getPublicKey() {
@@ -54,11 +53,4 @@ public class PublicKeyResponseMessage extends ResponseMessage {
         this.responseType = responseType;
     }
 
-    public String getErrorCode() {
-        return errorCode;
-    }
-
-    public void setErrorCode(String errorCode) {
-        this.errorCode = errorCode;
-    }
 }

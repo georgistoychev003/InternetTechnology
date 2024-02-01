@@ -6,23 +6,23 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class SessionKeyExchangeRequestMessage extends Message {
 
     private String responseType = "SESSION_KEY_EXCHANGE_REQ";
-    private String receiverUsername;
+    private String username;
     private String encryptedSessionKey;
 
     public SessionKeyExchangeRequestMessage() {
 
     }
 
-    public SessionKeyExchangeRequestMessage(String receiverUsername, String encryptedSessionKey) {
-        this.receiverUsername = receiverUsername;
+    public SessionKeyExchangeRequestMessage(String username, String encryptedSessionKey) {
+        this.username = username;
         this.encryptedSessionKey = encryptedSessionKey;
         setOverallData(determineMessageContents());
     }
     private String determineMessageContents() {
         String overallData = responseType;
         JsonNode node = getMapper().createObjectNode()
-                .put("receiver", receiverUsername)
-                .put("encrypted_session_key", encryptedSessionKey);
+                .put("username", username)
+                .put("encryptedSessionKey", encryptedSessionKey);
 
         overallData += " " + node.toString();
         return overallData;
@@ -36,12 +36,12 @@ public class SessionKeyExchangeRequestMessage extends Message {
         this.responseType = responseType;
     }
 
-    public String getReceiverUsername() {
-        return receiverUsername;
+    public String getUsername() {
+        return username;
     }
 
-    public void setReceiverUsername(String receiverUsername) {
-        this.receiverUsername = receiverUsername;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEncryptedSessionKey() {

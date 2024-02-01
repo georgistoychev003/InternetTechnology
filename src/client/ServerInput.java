@@ -32,17 +32,12 @@ public class ServerInput implements Runnable {
     private PrintWriter output;
     private ObjectMapper mapper;
     private Socket fileTransferSocket;
-    private  ClientInput clientInput;
 
-
-
-
-    public ServerInput(Socket socket, ClientInput clientInput) throws IOException {
+    public ServerInput(Socket socket) throws IOException {
         this.socket = socket;
         input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         output = new PrintWriter(socket.getOutputStream(), true);
         mapper = new ObjectMapper();
-        this.clientInput = clientInput;
     }
 
 
@@ -152,7 +147,10 @@ public class ServerInput implements Runnable {
                     handleFileTransfer(fileReceiveResponse);
                 }
                 case "PUBLIC_KEY_RESP" -> {
-                    handlePublicKeyResponse(response);
+                    String publicKeyUsername = Utility.extractParameterFromJson(response, "username");
+                    String publicKey = Utility.extractParameterFromJson(response, "publicKey");
+                    PublicKeyResponseMessage keyResponseMessage = new PublicKeyResponseMessage(publicKeyUsername, publicKey);
+                    handlePublicKeyResponse(keyResponseMessage);
                 }
                 default -> System.out.println(command + " Response: " + response);
             }
@@ -182,52 +180,20 @@ public class ServerInput implements Runnable {
 //        }
 //    }
 
-    private void handlePublicKeyResponse(String response) throws Exception {
-        String status = Utility.extractParameterFromJson(response, "status");
-        if ("OK".equals(status)) {
-            String publicKeyStr = Utility.extractParameterFromJson(response, "publicKey");
-            System.out.println("The public key of the recipient is: " + publicKeyStr);
-            PublicKey publicKey = convertStringToPublicKey(publicKeyStr);
+    private void handlePublicKeyResponse(PublicKeyResponseMessage response) throws Exception {
+        System.out.println("The public key of the recipient is: " + response.getPublicKey());
+        PublicKey publicKey = EncryptionUtilities.convertStringToPublicKey(response.getPublicKey());
+
+        SecretKey sessionKey = EncryptionUtilities.generateSessionKey();
+        byte[] encryptedSessionKey = EncryptionUtilities.encryptSessionKey(sessionKey, publicKey);
 
 
-            SecretKey sessionKey = generateSessionKey();
-            byte[] encryptedSessionKey = encryptSessionKey(sessionKey, publicKey);
+        // Prepare and send session key exchange request to server
+        sendSessionKeyExchangeRequest(response.getUsername(), encryptedSessionKey);
 
-            String receiverUsername = clientInput.getReceiverUsernameForEncryption();
-            // Prepare and send session key exchange request to server
-            sendSessionKeyExchangeRequest(receiverUsername, encryptedSessionKey);
-        } else {
-            String responseType = Utility.getResponseType(response);
-            String errorCode = Utility.extractParameterFromJson(response, "code");
-            ResponseMessage errorResponse = new ResponseMessage(responseType, "ERROR", errorCode);
-            System.out.println(ResponseHandler.determineResponseMessagePrint(errorResponse));
-        }
     }
 
-    private PublicKey convertStringToPublicKey(String publicKeyStr) throws Exception {
-        byte[] publicBytes = Base64.getDecoder().decode(publicKeyStr);
-        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        return keyFactory.generatePublic(keySpec);
-    }
-    private SecretKey generateSessionKey() throws NoSuchAlgorithmException {
-        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-        keyGen.init(256); // for example
-        return keyGen.generateKey();
-    }
-    private byte[] encryptSessionKey(SecretKey sessionKey, PublicKey publicKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        return cipher.doFinal(sessionKey.getEncoded());
-    }
 
-    private byte[] encryptMessage(String message, SecretKey sessionKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        byte[] iv = new byte[cipher.getBlockSize()];
-        IvParameterSpec ivParams = new IvParameterSpec(iv);
-        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKey.getEncoded(), "AES"), ivParams);
-        return cipher.doFinal(message.getBytes());
-    }
 
     private void sendSessionKeyExchangeRequest(String receiverUsername, byte[] encryptedSessionKey) {
         String encryptedKeyStr = Base64.getEncoder().encodeToString(encryptedSessionKey);

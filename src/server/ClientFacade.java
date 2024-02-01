@@ -206,19 +206,20 @@ public class ClientFacade {
         return getGuessingGame().checkGuess(number, username);
     }
 
-    public PublicKeyResponseMessage handlePublicKeyRequest(String targetUsername) {
+    public Message handlePublicKeyRequest(String targetUsername) {
         String publicKey = Server.getPublicKey(targetUsername);
         if (publicKey != null) {
             // Successful response with public key
-            return new PublicKeyResponseMessage("OK", publicKey, null);
+            return new PublicKeyResponseMessage(targetUsername, publicKey);
         } else {
             // Error response if user not found or user has no public key
-            return new PublicKeyResponseMessage("ERROR", null, "11000");
+            //TODO : the stated case above has 2 error codes according to protocol
+            return new ResponseMessage("ENCRYPTED_MESSAGE_SEND_RESP", "ERROR", "11000");
         }
     }
 
     public void handleSessionKeyExchange(SessionKeyExchangeRequestMessage requestMessage, String senderUsername) {
-        String receiverUsername = requestMessage.getReceiverUsername();
+        String receiverUsername = requestMessage.getUsername();
         String encryptedSessionKey = requestMessage.getEncryptedSessionKey();
 
         ClientHandler receiverHandler = Server.getLoggedInUsers().get(receiverUsername);

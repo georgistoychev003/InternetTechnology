@@ -128,17 +128,17 @@ public class ClientHandler implements Runnable {
                     break;
                 case "PUBLIC_KEY":
                     String username = Utility.extractParameterFromJson(message, "username");
-                    String publicKey = Utility.extractParameterFromJson(message, "public_key");
+                    String publicKey = Utility.extractParameterFromJson(message, "publicKey");
                     handlePublicKey(username, publicKey);
                     break;
                 case "PUBLIC_KEY_REQ":
                     String targetUsername = Utility.extractParameterFromJson(message, "targetUsername");
-                    PublicKeyResponseMessage publicKeyResponse = clientFacade.handlePublicKeyRequest(targetUsername);
+                    Message publicKeyResponse = clientFacade.handlePublicKeyRequest(targetUsername);
                     sendMessage(publicKeyResponse.getOverallData());
                     break;
                 case "SESSION_KEY_EXCHANGE_REQ":
-                    String usernameOfReceiver = Utility.extractParameterFromJson(message, "receiver");
-                    String encryptedSessionKey = Utility.extractParameterFromJson(message, "encrypted_session_key");
+                    String usernameOfReceiver = Utility.extractParameterFromJson(message, "username");
+                    String encryptedSessionKey = Utility.extractParameterFromJson(message, "encryptedSessionKey");
                     SessionKeyExchangeRequestMessage requestMessage = new SessionKeyExchangeRequestMessage(usernameOfReceiver, encryptedSessionKey);
                     clientFacade.handleSessionKeyExchange(requestMessage, this.username);
                     break;

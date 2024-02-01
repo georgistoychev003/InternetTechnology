@@ -22,7 +22,7 @@ public class PublicKeyMessage extends Message {
         String overallData = responseType;
         JsonNode node = getMapper().createObjectNode()
                 .put("username", username)
-                .put("public_key", publicKey);
+                .put("publicKey", publicKey);
 
         overallData += " " + node.toString();
         return overallData;

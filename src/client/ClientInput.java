@@ -17,8 +17,6 @@ public class ClientInput implements Runnable {
     private Client client;
     private ObjectMapper mapper;
     private String username;
-    String receiverUsernameForEncryption;
-
     private Socket fileTransferSocket;
 
     public ClientInput(Client client,Socket socket) throws IOException {
@@ -101,7 +99,6 @@ public class ClientInput implements Runnable {
             return;
         }
         String receiverUsername = parts[2];
-        this.receiverUsernameForEncryption = receiverUsername; // store the receiver username
         String message = parts[3];
 
         // Store the message locally
@@ -318,9 +315,6 @@ public class ClientInput implements Runnable {
 
     public boolean isLoggedIn() {
         return username != null;
-    }
-    public String getReceiverUsernameForEncryption() {
-        return this.receiverUsernameForEncryption;
     }
 
     @Override
