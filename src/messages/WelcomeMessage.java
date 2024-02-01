@@ -5,21 +5,28 @@ import utils.Utility;
 
 public class WelcomeMessage extends Message{
 
+    private String responseType;
     private String msg;
+    private String version;
     public WelcomeMessage() {
 
     }
-    public WelcomeMessage(String overallData) {
-       setOverallData(overallData);
-        determineMessageBody(overallData);
+    public WelcomeMessage(String version) {
+//       setOverallData(overallData);
+        responseType = "WELCOME";
+        msg = "Welcome to the server " + version;
+        setOverallData(determineMessageContents());
     }
 
-    private void determineMessageBody(String overallData) {
-        JsonNode jsonNode = Utility.getMessageContents(overallData);
-        if (jsonNode.has("msg")){
-            msg = jsonNode.get("msg").asText();
-        }
+    private String determineMessageContents() {
+        String overallData = responseType;
+        JsonNode node = getMapper().createObjectNode()
+                .put("msg", msg);
+
+        overallData += " " + node.toString();
+        return overallData;
     }
+
 
     public void setMsg(String msg) {
         this.msg = msg;

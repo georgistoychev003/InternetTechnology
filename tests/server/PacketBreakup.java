@@ -39,25 +39,26 @@ class PacketBreakup {
 
     @AfterEach
     void cleanup() throws IOException {
+        out.println("BYE");
         s.close();
     }
 
-//    @Test
-//    void TC4_1_identFollowedByBroadcastWithMultipleFlushReturnsOk() throws JsonProcessingException {
-//        receiveLineWithTimeout(in); //welcome message
-//        out.print("LOGIN {\"username\":\"m");
-//        out.flush();
-//        out.print("yname\"}\r\nBROAD");
-//        out.flush();
-//        out.print("BROADCAST_REQ {\"message\":\"a\"}\r\n");
-//        out.flush();
-//        String serverResponse = receiveLineWithTimeout(in);
-//        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
-//        assertEquals("OK", loginResp.getStatus());
-//        serverResponse = receiveLineWithTimeout(in);
-//        ResponseMessage broadcastResp = Utility.createResponseClass(serverResponse);
-//        assertEquals("OK", broadcastResp.getStatus());
-//    }
+    @Test
+    void TC4_1_identFollowedByBroadcastWithMultipleFlushReturnsOk() throws JsonProcessingException {
+        receiveLineWithTimeout(in); //welcome message
+        out.print("LOGIN {\"username\":\"m");
+        out.flush();
+        out.print("yname\"}\r\nBROAD");
+        out.flush();
+        out.print("CAST_REQ {\"message\":\"a\"}\r\n");
+        out.flush();
+        String serverResponse = receiveLineWithTimeout(in);
+        ResponseMessage loginResp = Utility.createResponseClass(serverResponse);
+        assertEquals("OK", loginResp.getStatus());
+        serverResponse = receiveLineWithTimeout(in);
+        ResponseMessage broadcastResp = Utility.createResponseClass(serverResponse);
+        assertEquals("OK", broadcastResp.getStatus());
+    }
 
     private String receiveLineWithTimeout(BufferedReader reader){
         return assertTimeoutPreemptively(ofMillis(max_delta_allowed_ms), reader::readLine);

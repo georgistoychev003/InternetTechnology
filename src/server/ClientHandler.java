@@ -19,6 +19,7 @@ public class ClientHandler implements Runnable {
     private InputStream inputStream;
     private OutputStream outputStream;
     private AtomicBoolean running;
+    private AtomicBoolean sentPing = new AtomicBoolean(false);
     private AtomicBoolean receivedPong = new AtomicBoolean(false);
     private ClientFacade clientFacade = new ClientFacade(this);
     private String username;
@@ -40,7 +41,8 @@ public class ClientHandler implements Runnable {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream));
 
-            WelcomeMessage welcomeMessage = new WelcomeMessage("WELCOME {\"msg\":\"Welcome to the server " + Server.VERSION + "\"}");
+            //TODO: fix that
+            WelcomeMessage welcomeMessage = new WelcomeMessage(Server.VERSION);
             sendMessage(welcomeMessage.getOverallData());
 
             String line;
@@ -81,7 +83,12 @@ public class ClientHandler implements Runnable {
                     this.handleLogout();
                     break;
                 case "PONG":
-                    receivedPong.set(true);
+                    if (sentPing.get()){
+                        receivedPong.set(true);
+                        sentPing.set(false);
+                    } else {
+                        sendMessage(new PongError("7001").getOverallData());
+                    }
                     break;
                 case "CLIENT_LIST_REQ":
                     Message listRequestMessageToSend = clientFacade.handleClientListRequest();
@@ -114,7 +121,10 @@ public class ClientHandler implements Runnable {
                     sendMessage(fileTransferRequestMessage.getOverallData());
                     break;
                 case "FILE_RECEIVE_RESP":
-                    clientFacade.handleFileReceiveResponse(message);
+                    Message fileReceiveResponseMessage = clientFacade.handleFileReceiveResponse(message);
+                    if (fileReceiveResponseMessage instanceof ResponseMessage) {
+                        sendMessage(fileReceiveResponseMessage.getOverallData());
+                    }
                     break;
                 case "PUBLIC_KEY":
                     String username = Utility.extractParameterFromJson(message, "username");
@@ -183,6 +193,7 @@ public class ClientHandler implements Runnable {
                 while (running.get()) {
                     Thread.sleep(10000); // Send ping every 10 seconds
                     receivedPong.set(false); // Reset the pong
+                    sentPing.set(true);
                     Message pingMessage = new Message("PING");
                     sendMessage(pingMessage.getOverallData());
 
@@ -245,7 +256,7 @@ public class ClientHandler implements Runnable {
 
 
 
-        private void closeConnection() {
+    private void closeConnection() {
         try {
             if (inputStream != null) inputStream.close();
             if (outputStream != null) outputStream.close();

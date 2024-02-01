@@ -39,6 +39,7 @@ class AcceptedUsernames {
 
     @AfterEach
     void cleanup() throws IOException {
+        out.println("BYE");
         s.close();
     }
 

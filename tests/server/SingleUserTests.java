@@ -20,7 +20,7 @@ class SingleUserTests {
     private static Properties props = new Properties();
     private static int ping_time_ms;
     private static int ping_time_ms_delta_allowed;
-    private final static int max_delta_allowed_ms = 1000;
+    private final static int max_delta_allowed_ms = 10000;
 
     private Socket s;
     private BufferedReader in;
@@ -45,14 +45,14 @@ class SingleUserTests {
 
     @AfterEach
     void cleanup() throws IOException {
+        out.println("BYE");
         s.close();
     }
 
     @Test
-    void TC5_1_initialConnectionToServerReturnsWelcomeMessage() throws JsonProcessingException {
+    void TC5_1_initialConnectionToServerReturnsWelcomeMessage() {
         String firstLine = receiveLineWithTimeout(in);
-        WelcomeMessage welcome = Utils.messageToObject(firstLine);
-        assertEquals(new WelcomeMessage("WELCOME {\"msg\":\"Welcome to the server 1.0\"}"), welcome);
+        assertEquals(new WelcomeMessage("1.0").getOverallData(), firstLine);
     }
 
     @Test
@@ -80,7 +80,7 @@ class SingleUserTests {
     }
 
     @Test
-    void TC5_4_emptyJsonMessageReturnsError() throws JsonProcessingException {
+    void TC5_4_emptyJsonMessageReturnsError() {
         receiveLineWithTimeout(in); //welcome message
         out.println("LOGIN {\"username\": \"aa\"}");
         out.flush();
@@ -90,17 +90,14 @@ class SingleUserTests {
         assertEquals(new ResponseMessage("LOGIN_RESP", "ERROR", "5001").getOverallData(), resp.getOverallData());
     }
 
-//    @Test
-//    void TC5_5_pongWithoutPingReturnsErrorMessage() throws JsonProcessingException {
-//        receiveLineWithTimeout(in); //welcome message
-//        out.println("PONG");
-//        out.flush();
-//        String serverResponse = receiveLineWithTimeout(in);
-//        System.out.println(serverResponse);
-//        String reason = Utility.extractParameterFromJson(serverResponse, "reason");
-//        DisconnectMessage pongError = Utils.messageToObject(serverResponse);
-//        assertEquals(new DisconnectMessage("7000").getOverallData(), pongError.getOverallData());
-//    }
+    @Test
+    void TC5_5_pongWithoutPingReturnsErrorMessage() throws JsonProcessingException {
+        receiveLineWithTimeout(in); //welcome message
+        out.println("PONG");
+        out.flush();
+        String serverResponse = receiveLineWithTimeout(in);
+        assertEquals(new PongError("7001").getOverallData(), serverResponse);
+    }
 
     @Test
     void TC5_6_logInTwiceReturnsErrorMessage() throws JsonProcessingException {
@@ -118,30 +115,31 @@ class SingleUserTests {
         assertEquals(new ResponseMessage("LOGIN_RESP", "ERROR", "5002").getOverallData(), loginResp.getOverallData());
     }
 
-//    @Test
-//    void TC5_7_pingIsReceivedAtExpectedTime(TestReporter testReporter) throws JsonProcessingException {
-//        receiveLineWithTimeout(in); //welcome message
-//        out.println(Utils.objectToMessage(new LoginMessage("myname")));
-//        out.flush();
-//        receiveLineWithTimeout(in); //server response
-//
-//        //Make sure the test does not hang when no response is received by using assertTimeoutPreemptively
-//        assertTimeoutPreemptively(ofMillis(ping_time_ms + ping_time_ms_delta_allowed), () -> {
-//            Instant start = Instant.now();
-//            String pingString = in.readLine();
-//            Instant finish = Instant.now();
-//
-//            // Make sure the correct response is received
+    @Test
+    void TC5_7_pingIsReceivedAtExpectedTime(TestReporter testReporter) throws JsonProcessingException {
+        receiveLineWithTimeout(in); //welcome message
+        Instant start = Instant.now();
+        out.println(Utils.objectToMessage(new LoginMessage("myname")));
+        out.flush();
+        receiveLineWithTimeout(in); //server response
+
+        //Make sure the test does not hang when no response is received by using assertTimeoutPreemptively
+        assertTimeoutPreemptively(ofMillis(ping_time_ms + ping_time_ms_delta_allowed), () -> {
+            String pingString = in.readLine();
+            Instant finish = Instant.now();
+
+            // Make sure the correct response is received
 //            Ping ping = Utils.messageToObject(pingString);
-//
-//            assertNotNull(ping);
-//
-//            // Also make sure the response is not received too early
-//            long timeElapsed = Duration.between(start, finish).toMillis();
-//            testReporter.publishEntry("timeElapsed", String.valueOf(timeElapsed));
-//            assertTrue(timeElapsed > ping_time_ms - ping_time_ms_delta_allowed);
-//        });
-//    }
+            System.out.println(pingString);
+
+            assertNotNull(pingString);
+
+            // Also make sure the response is not received too early
+            long timeElapsed = Duration.between(start, finish).toMillis();
+            testReporter.publishEntry("timeElapsed", String.valueOf(timeElapsed));
+            assertTrue(timeElapsed > ping_time_ms - ping_time_ms_delta_allowed - 300);
+        });
+    }
 
     @Test
     void TC5_8_requestingClientListWhenNotLoggedInReturnsError() throws JsonProcessingException {

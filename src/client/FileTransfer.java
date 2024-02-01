@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 public class FileTransfer {
 
@@ -30,19 +31,22 @@ public class FileTransfer {
 
 
     public void initiateFileTransfer() {
-        try {
-            // Connect to the file transfer server
-            fileTransferSocket = new Socket( "127.0.0.1", 1338);
+        new Thread(() -> {
+            try {
+                // Connect to the file transfer server
+                fileTransferSocket = new Socket( "127.0.0.1", 1338);
 
-            // Send the file content to the server
-            sendFileContent();
+                // Send the file content to the server
+                sendFileContent();
 
-            // Close the file transfer socket
-            fileTransferSocket.close();
-        } catch (IOException e) {
-            System.err.println("Exception during file transfer initiation: " + e.getMessage());
-            e.printStackTrace();
-        }
+                // Close the file transfer socket
+                fileTransferSocket.close();
+            } catch (IOException e) {
+                System.err.println("Exception during file transfer initiation: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }).start();
+
     }
 
     private void sendFileContent() {
@@ -52,15 +56,23 @@ public class FileTransfer {
 
             // Include sender/receiver indicator, UUID, and checksum in the file content
             outputStream.write('S');
-            // TODO change this to make sure the Sender and Receiver both use the same UUID (they agree on one in the protocol step)
             outputStream.write(uuid.getBytes());
+            String fileExtension = Optional.of(filePath)
+                    .filter(f -> f.contains("."))
+                    .map(f -> f.substring(filePath.lastIndexOf(".") + 1)).orElse("");
+            if (fileExtension.length() != 3) {
+                fileExtension = "txt";
+            }
+            outputStream.write(fileExtension.getBytes());
+            System.out.println("UUID:" + uuid);
+            System.out.println("File ext:" + fileExtension);
             String checksum = calculateMD5Checksum(file);
             System.out.println("Checksum: " + checksum);
             System.out.println("Checksum length: " + checksum.length());
             outputStream.write(checksum.getBytes());
 
             long bytesTransferred = fileInputStream.transferTo(fileTransferSocket.getOutputStream());
-
+            fileInputStream.close();
             System.out.println("File Transfer Complete. Bytes Transferred: " + bytesTransferred);
         } catch (IOException e) {
             System.err.println("Exception during file content transfer: " + e.getMessage());
@@ -81,7 +93,8 @@ public class FileTransfer {
             }
 
             byte[] hash = md.digest();
-            return new BigInteger(1, hash).toString(16);
+
+            return String.format("%032x", new BigInteger(1, hash));
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }

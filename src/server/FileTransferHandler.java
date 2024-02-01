@@ -23,14 +23,19 @@ public class FileTransferHandler implements Runnable {
             // Receive file transfer details
             DataInputStream dataInputStream = new DataInputStream(senderSocket.getInputStream());
             OutputStream outputStream = receiverSocket.getOutputStream();
-            // Read the sender/receiver indicator
-            byte indicator = dataInputStream.readByte();
-            char indicatorChar = (char) indicator;
+//            // Read the sender/receiver indicator
+//            byte indicator = dataInputStream.readByte();
+//            char indicatorChar = (char) indicator;
+//
+//            // Read UUID
+//            byte[] uuidBytes = new byte[36];
+//            dataInputStream.readFully(uuidBytes);
+//            String uuid = new String(uuidBytes);
 
-            // Read UUID
-            byte[] uuidBytes = new byte[36];
-            dataInputStream.readFully(uuidBytes);
-            String uuid = new String(uuidBytes);
+            //Read fileExtension
+            byte[] fileExtensionBytes = new byte[3];
+            dataInputStream.readFully(fileExtensionBytes);
+            String fileExtension = new String(fileExtensionBytes);
 
             // Read checksum
             byte[] checksumBytes = new byte[32];
@@ -39,31 +44,33 @@ public class FileTransferHandler implements Runnable {
 
             // Read file contents
             // we need to fix this for larger files
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = dataInputStream.read(buffer)) != -1) {
-                byteArrayOutputStream.write(buffer, 0, bytesRead);
-            }
+//            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//            byte[] buffer = new byte[4096];
+//            int bytesRead;
+//            while ((bytesRead = dataInputStream.read(buffer)) != -1) {
+//                byteArrayOutputStream.write(buffer, 0, bytesRead);
+//            }
 
             System.out.println("Received File Transfer:");
-            System.out.println("Sender/Receiver Indicator: " + indicatorChar);
-            System.out.println("UUID: " + uuid);
+//            System.out.println("Sender/Receiver Indicator: " + indicatorChar);
+//            System.out.println("UUID: " + uuid);
             System.out.println("Checksum: " + checksum);
+            System.out.println("File extension: " + fileExtension);
 
-            outputStream.write(indicator);
-            outputStream.write(uuidBytes);
+//            outputStream.write(indicator);
+//            outputStream.write(uuidBytes);
+            outputStream.write(fileExtensionBytes);
             outputStream.write(checksumBytes);
 
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+//            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
 
-            long bytesTransferred = byteArrayInputStream.transferTo(receiverSocket.getOutputStream());
+            long bytesTransferred = dataInputStream.transferTo(receiverSocket.getOutputStream());
             System.out.println("Bytes transferred to receiver: " + bytesTransferred);
 
             // Signal that transfer finished
             //TODO : this is written to the actual file so find a better way to signal
-            outputStream.write(0);
-            outputStream.flush();
+//            outputStream.write(0);
+//            outputStream.flush();
             outputStream.close();
 
 

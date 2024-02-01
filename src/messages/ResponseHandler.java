@@ -29,9 +29,14 @@ public class ResponseHandler {
             case "5002" -> "A user cannot login twice. You can logout and try to log in again!";
             case "6000" ->
                     "You need to be logged in to perform this action! Please log in and try again!";
-            case "7000", "7001" -> "You were disconnected from the server, due to an internal error";
+            case "7000" -> "You were disconnected from the server, due to an internal error";
+            case "7001" -> "Internal server error: sending pong without receiving ping";
             case "8000" -> "Server error occurred";
-            case "8001" -> "You cannot send a file to yourself or a non-existent user";
+            case "8001" -> "You cannot send a file to a non-existent user";
+            case "8002" -> "You cannot send a file to yourself";
+            case "8003" -> "Please provide a valid response when accepting/rejecting a file transfer";
+            case "8004" -> "The UUID provided when accepting the file transfer, is not valid ";
+            case "8005" -> "You cannot accept a file from a non-existing user";
             case "9000" -> "You cannot start a game after one is already created";
             case "9001" -> "Not enough players to start the game";
             case "9002" -> "Invalid guess number format";

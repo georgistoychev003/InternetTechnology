@@ -5,16 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import messages.*;
 
 import java.io.*;
-import java.math.BigInteger;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -46,7 +37,7 @@ public class ClientInput implements Runnable {
             if (userInput.startsWith("login ")) {
                 handleLoginCommand(userInput);
             } else if (userInput.startsWith("message ")) {
-               handleMessageCommand(userInput);
+                handleMessageCommand(userInput);
             } else if (userInput.equalsIgnoreCase("list")) {
                 sendListRequest();
             } else if (userInput.startsWith("private ")) {
@@ -57,7 +48,7 @@ public class ClientInput implements Runnable {
                 handleGameJoin();
             } else if (userInput.startsWith("game guess ")) {
                 handleGameGuess(userInput);
-            } else if(userInput.startsWith("file transfer ")){
+            } else if (userInput.startsWith("file transfer ")) {
                 handleFileTransfer(userInput);
             } else if (userInput.startsWith("file receive ")) {
                 handleFileReceiveResponseCommand(userInput);
@@ -147,6 +138,7 @@ public class ClientInput implements Runnable {
         sendToServer(gameGuessMessage.getOverallData());
 
     }
+
     private void handleFileTransfer(String userInput) {
         String[] parts = userInput.split(" ", 4);
         if (parts.length < 4) {
@@ -185,90 +177,45 @@ public class ClientInput implements Runnable {
             uuid = UUID.randomUUID().toString();
 
         }
+
         sendFileReceiveResponse(sender, responseCode, uuid);
 
-        if (response.equalsIgnoreCase("yes")){
+        if (response.equalsIgnoreCase("yes")) {
             try {
-                fileTransferSocket = new Socket( "127.0.0.1", 1338);
-                // Wait until the socket is connected or a timeout occurs
-                int maxWaitTimeMillis = 10000; // Maximum wait time (adjust as needed)
-                int intervalMillis = 500; // Check every 500 milliseconds (adjust as needed)
-                int waitedTime = 0;
-
-                while (!fileTransferSocket.isConnected() && waitedTime < maxWaitTimeMillis) {
-                    System.out.println("In the loop");
-                    Thread.sleep(intervalMillis);
-                    waitedTime += intervalMillis;
-                }
-
-                if (fileTransferSocket.isConnected()) {
-                    handleFileReceive(sender, uuid);
-                } else {
-                    System.out.println("File transfer socket connection timeout.");
-                    // Handle the case where the connection did not succeed within the specified time
-                }
+                fileTransferSocket = new Socket("127.0.0.1", 1338);
+                fileTransferSocket.getOutputStream().write("R".getBytes());
+                fileTransferSocket.getOutputStream().write(uuid.getBytes());
+                fileTransferSocket.getOutputStream().flush();
+                handleFileReceive(uuid);
             } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-//            handleFileReceive(sender, uuid);
         }
     }
 
-    private void handleFileReceive(String sender, String uuid) {
-        System.out.println("In handleFileReceive");
+    private void handleFileReceive(String uuid) {
         try {
             if (fileTransferSocket != null && !fileTransferSocket.isClosed()) {
-                // Read sender/receiver indicator
-                DataInputStream dataInputStream = new DataInputStream(fileTransferSocket.getInputStream());
-                byte indicator = dataInputStream.readByte();
-                char indicatorChar = (char) indicator;
 
-                // Read UUID
-                byte[] uuidBytes = new byte[36];
-                dataInputStream.readFully(uuidBytes);
-                String receivedUuid = new String(uuidBytes);
-
-                // Read checksum
-                byte[] checksumBytes = new byte[32];
-                dataInputStream.readFully(checksumBytes);
-                String checksum = new String(checksumBytes);
-
-                System.out.println("Sender/Receiver Indicator: " + indicatorChar);
-                System.out.println("UUID: " + receivedUuid);
+                String fileExtension = new String(fileTransferSocket.getInputStream().readNBytes(3));
+                String checksum = new String(fileTransferSocket.getInputStream().readNBytes(32));
+                System.out.println("File extension: " + fileExtension);
                 System.out.println("Checksum: " + checksum);
 
-                // reading file content
-                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-
-                while ((bytesRead = dataInputStream.read(buffer)) != -1) {
-//                    System.out.println("Bytes read: " + bytesRead);
-                    if (buffer[0] == 0) {
-                        // Signal indicating the end of the file transfer
-                        break;
-                    }
-                    byteArrayOutputStream.write(buffer, 0, bytesRead - 1);
-                }
-
-                //Get file
-                byte[] fileByteArray = byteArrayOutputStream.toByteArray();
+                File file = new File(uuid + "." + fileExtension);
+                file.createNewFile();
+                FileOutputStream fileOutputStream = new FileOutputStream(file);
+                fileTransferSocket.getInputStream().transferTo(fileOutputStream);
 
                 // Compare checksum received and checksum of the file
-                boolean notCorrupted = compareChecksum(checksum, fileByteArray);
-
-                if (notCorrupted){
-                    // Save the file
-                    String fileName = uuid + ".txt";
-                    try (FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
-                        fileOutputStream.write(fileByteArray);
-                        System.out.println("File received and saved: " + fileName);
-                    }
+                boolean notCorrupted = compareChecksum(checksum, file);
+                if (notCorrupted) {
+                    System.out.println("File received and saved: " + file.getName());
                 } else {
                     System.out.println("File was corrupted during transfer!");
+                    fileOutputStream.close();
+                    file.delete();
                 }
 
             } else {
@@ -290,39 +237,20 @@ public class ClientInput implements Runnable {
         }
     }
 
-    private boolean compareChecksum(String receivedChecksum, byte[] fileByteArray) {
-        // Save the byte array to a temporary file
-        File tempFile;
+    private boolean compareChecksum(String receivedChecksum, File file) {
+        String receivedFileChecksum;
         try {
-            tempFile = File.createTempFile("tempFile", ".txt");
-            try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-                fileOutputStream.write(fileByteArray);
-            }
+            receivedFileChecksum = FileTransfer.calculateMD5Checksum(file);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        // Calculate the checksum of the temporary file
-        String fileChecksum;
-        try {
-            fileChecksum = FileTransfer.calculateMD5Checksum(tempFile);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            // Delete the temporary file
-            tempFile.delete();
-        }
-        System.out.println("File checksum: " + fileChecksum);
-        return receivedChecksum.equals(fileChecksum);
-
-//        return true;
+        return receivedChecksum.equals(receivedFileChecksum);
     }
 
     private void sendFileReceiveResponse(String sender, String responseCode, String uuid) {
-        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(sender,responseCode, uuid);
+        FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(sender, responseCode, uuid);
         sendToServer(responseMessage.getOverallData());
     }
-
 
 
     private void sendFileTransferRequest(String receiver, String fileName) {
@@ -387,6 +315,7 @@ public class ClientInput implements Runnable {
     private void sendListRequest() {
         sendToServer("CLIENT_LIST_REQ", null);
     }
+
     public boolean isLoggedIn() {
         return username != null;
     }

@@ -3,7 +3,6 @@ package server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import messages.*;
 import org.junit.jupiter.api.*;
-import server.protocol.utils.Utils;
 import utils.Utility;
 
 
@@ -14,7 +13,8 @@ import java.util.Properties;
 
 import static java.time.Duration.ofMillis;
 import static org.junit.jupiter.api.Assertions.*;
-
+//@TestMethodOrder(MethodOrderer.MethodName.class)
+//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MultipleUserTests {
 
     private static Properties props = new Properties();
@@ -24,6 +24,7 @@ class MultipleUserTests {
     private PrintWriter outUser1, outUser2, outUser3;
 
     private final static int max_delta_allowed_ms = 1000000;
+    private boolean gameIsStarted = false;
 
     @BeforeAll
     static void setupAll() throws IOException {
@@ -45,14 +46,25 @@ class MultipleUserTests {
         socketUser3 = new Socket(props.getProperty("host"), Integer.parseInt(props.getProperty("port")));
         inUser3 = new BufferedReader(new InputStreamReader(socketUser3.getInputStream()));
         outUser3 = new PrintWriter(socketUser3.getOutputStream(), true);
+
     }
 
     @AfterEach
     void cleanup() throws IOException {
-        socketUser1.close();
-        socketUser2.close();
-        socketUser3.close();
+        outUser1.println("BYE");
+        outUser2.println("BYE");
+        outUser3.println("BYE");
+//        socketUser1.close();
+//        socketUser2.close();
+//        socketUser3.close();
     }
+
+//    @AfterAll
+//    void closeSockets() throws IOException {
+//        socketUser1.close();
+//        socketUser2.close();
+//        socketUser3.close();
+//    }
 
     @Test
     /* This test is expected to fail with the given NodeJS server because the JOINED is not implemented.
@@ -274,19 +286,20 @@ class MultipleUserTests {
 
         receiveLineWithTimeout(inUser1); // game created OK
         receiveLineWithTimeout(inUser2); // invitation to join game
-
+//        createAndStartGame();
 
         outUser2.println("GAME_CREATE_REQ");
         outUser2.flush();
 
-        String errorResp = receiveLineWithTimeout(inUser2); // Successfully joined game
+        String errorResp = receiveLineWithTimeout(inUser2); // Game error
         ResponseMessage errorResponse = Utility.createResponseClass(errorResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9000").getOverallData(), errorResponse.getOverallData());
+        receiveLineWithTimeout(inUser1); // game not started
     }
 
     @Test
-    void TC3_10_tryingToStartGameWith1PlayerReturnsError() {
+    void TC3_010_tryingToStartGameWith1PlayerReturnsError() {
         connectTwoClients();
 
         outUser1.println("GAME_CREATE_REQ");
@@ -303,31 +316,20 @@ class MultipleUserTests {
     }
 
     @Test
-    void TC3_11_tryingToGuessWithInvalidFormatReturnsError() {
+    void TC3_011_tryingToGuessWithInvalidFormatReturnsError() {
         createAndStartGame();
-
-        outUser1.println("GAME_CREATE_REQ");
-        outUser1.flush();
-
-        receiveLineWithTimeout(inUser1); // game created OK
-        receiveLineWithTimeout(inUser2); // invitation to join game
-
-        outUser2.println("GAME_JOIN_REQ");
-        outUser2.flush();
-
-        receiveLineWithTimeout(inUser1); // PING
-        receiveLineWithTimeout(inUser1); // game started
-
 
         outUser1.println(new GameGuessMessage("#"));
         String gameGuessResp = receiveLineWithTimeout(inUser1); // guess status
         ResponseMessage errorResp = Utility.createResponseClass(gameGuessResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9002").getOverallData(), errorResp.getOverallData());
+
+        guessNumbers();
     }
 
     @Test
-    void TC3_12_tryingToGuessWithNumberOutOfRangeGivesError() {
+    void TC3_012_tryingToGuessWithNumberOutOfRangeGivesError() {
         createAndStartGame();
 
         outUser1.println(new GameGuessMessage("51"));
@@ -335,10 +337,12 @@ class MultipleUserTests {
         ResponseMessage errorResp = Utility.createResponseClass(gameGuessResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9003").getOverallData(), errorResp.getOverallData());
+
+        guessNumbers();
     }
 
     @Test
-    void TC3_13_tryingToJoinGameAfterItHasStartedGivesError() {
+    void TC3_013_tryingToJoinGameAfterItHasStartedGivesError() {
         createAndStartGame();
 
         // Connect user3
@@ -347,6 +351,8 @@ class MultipleUserTests {
         outUser3.flush();
         receiveLineWithTimeout(inUser3); //PING
         receiveLineWithTimeout(inUser3); //OK
+        receiveLineWithTimeout(inUser1); // user3 joined
+        receiveLineWithTimeout(inUser2); // user3 joined
 
 
         outUser3.println("GAME_JOIN_REQ");
@@ -355,10 +361,11 @@ class MultipleUserTests {
         ResponseMessage errorResponse = Utility.createResponseClass(errorResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9004").getOverallData(), errorResponse.getOverallData());
+        guessNumbers();
     }
 
     @Test
-    void TC3_14_tryingToMakeGuessWithoutLoggingInGivesError() {
+    void TC3_014_tryingToMakeGuessWithoutLoggingInGivesError() {
         createAndStartGame();
 
         receiveLineWithTimeout(inUser3); //WELCOME
@@ -369,10 +376,12 @@ class MultipleUserTests {
         ResponseMessage errorResponse = Utility.createResponseClass(errorResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9005").getOverallData(), errorResponse.getOverallData());
+
+        guessNumbers();
     }
 
     @Test
-    void TC3_15_tryingToMakeGuessWhenNotPartOfTheGameGivesError() {
+    void TC3_015_tryingToMakeGuessWhenNotPartOfTheGameGivesError() {
         createAndStartGame();
 
         // Connect user3
@@ -381,6 +390,8 @@ class MultipleUserTests {
         outUser3.flush();
         receiveLineWithTimeout(inUser3); //PING
         receiveLineWithTimeout(inUser3); //OK
+        receiveLineWithTimeout(inUser1); // user3 joined
+        receiveLineWithTimeout(inUser2); // user3 joined
 
 
         outUser3.println(new GameGuessMessage("5"));
@@ -389,10 +400,12 @@ class MultipleUserTests {
         ResponseMessage errorResponse = Utility.createResponseClass(errorResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9006").getOverallData(), errorResponse.getOverallData());
+
+        guessNumbers();
     }
 
     @Test
-    void TC3_16_tryingToMakeGuessWhenGameHasNotStartedGivesError() {
+    void TC3_016_tryingToMakeGuessWhenGameHasNotStartedGivesError() {
         connectTwoClients();
 
         outUser1.println("GAME_CREATE_REQ");
@@ -412,10 +425,17 @@ class MultipleUserTests {
         ResponseMessage errorResponse = Utility.createResponseClass(errorResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9007").getOverallData(), errorResponse.getOverallData());
+
+        receiveLineWithTimeout(inUser1); // PING
+        receiveLineWithTimeout(inUser1); // game started
+        receiveLineWithTimeout(inUser2); // PING
+        receiveLineWithTimeout(inUser2); // game started
+
+        guessNumbers();
     }
 
     @Test
-    void TC3_17_tryingToJoinGameTwiceGivesError() {
+    void TC3_017_tryingToJoinGameTwiceGivesError() {
         createAndStartGame();
 
         outUser2.println("GAME_JOIN_REQ");
@@ -424,10 +444,12 @@ class MultipleUserTests {
         ResponseMessage errorResponse = Utility.createResponseClass(errorResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9008").getOverallData(), errorResponse.getOverallData());
+
+        guessNumbers();
     }
 
     @Test
-    void TC3_18_tryingToMakeGuessesAfterGuessingTheNumberReturnsError() {
+    void TC3_018_tryingToMakeGuessesAfterGuessingTheNumberReturnsError() {
         createAndStartGame();
 
         int counter = 1;
@@ -448,7 +470,10 @@ class MultipleUserTests {
         ResponseMessage guessResponse = Utility.createResponseClass(guessResp);
 
         assertEquals(new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9010").getOverallData(), guessResponse.getOverallData());
+
+        outUser2.println(new GameGuessMessage(String.valueOf(counter))); // player 2 guesses after that
     }
+
 
     private String receiveLineWithTimeout(BufferedReader reader) {
         return assertTimeoutPreemptively(ofMillis(max_delta_allowed_ms), reader::readLine);
@@ -458,6 +483,7 @@ class MultipleUserTests {
         receiveLineWithTimeout(inUser1); //WELCOME
         receiveLineWithTimeout(inUser2); //WELCOME
 
+//        generateRandomString(4);
         // Connect user1
         outUser1.println(new LoginMessage("user1"));
         outUser1.flush();
@@ -470,23 +496,45 @@ class MultipleUserTests {
         receiveLineWithTimeout(inUser1); //JOINED
     }
 
+    private void generateRandomString(int i) {
+    }
+
+    private void guessNumbers() {
+        int counter = 1;
+        outUser1.println(new GameGuessMessage(String.valueOf(counter)));
+        String gameGuessResp = receiveLineWithTimeout(inUser1); // guess status
+        GameGuessResponseMessage guessResponseMessage = Utility.createGameGuessResponseClass(gameGuessResp);
+        while (!guessResponseMessage.getNumber().equals("0")) {
+            counter++;
+
+            outUser1.println(new GameGuessMessage(String.valueOf(counter)));
+
+            gameGuessResp = receiveLineWithTimeout(inUser1); // guess status
+            guessResponseMessage = Utility.createGameGuessResponseClass(gameGuessResp);
+        }
+        outUser2.println(new GameGuessMessage(String.valueOf(counter))); // player 2 guesses after that
+    }
+
     private void createAndStartGame() {
-        connectTwoClients();
+        if (!gameIsStarted) {
+            connectTwoClients();
 
-        outUser1.println("GAME_CREATE_REQ");
-        outUser1.flush();
+            outUser1.println("GAME_CREATE_REQ");
+            outUser1.flush();
 
-        receiveLineWithTimeout(inUser1); // game created OK
-        receiveLineWithTimeout(inUser2); // invitation to join game
+            receiveLineWithTimeout(inUser1); // game created OK
+            receiveLineWithTimeout(inUser2); // invitation to join game
 
-        outUser2.println("GAME_JOIN_REQ");
-        outUser2.flush();
-        receiveLineWithTimeout(inUser2); // game join success
+            outUser2.println("GAME_JOIN_REQ");
+            outUser2.flush();
+            receiveLineWithTimeout(inUser2); // game join success
 
-        receiveLineWithTimeout(inUser1); // PING
-        receiveLineWithTimeout(inUser1); // game started
-        receiveLineWithTimeout(inUser2); // PING
-        receiveLineWithTimeout(inUser2); // game started
+            receiveLineWithTimeout(inUser1); // PING
+            receiveLineWithTimeout(inUser1); // game started
+            receiveLineWithTimeout(inUser2); // PING
+            receiveLineWithTimeout(inUser2); // game started
+            gameIsStarted = true;
+        }
     }
 
 }

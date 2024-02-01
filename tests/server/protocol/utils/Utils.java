@@ -22,7 +22,6 @@ public class Utils {
         objToNameMapping.put(WelcomeMessage.class, new ArrayList<>(List.of("WELCOME")));
 //        objToNameMapping.put(Ping.class, "PING");
     }
-//TODO : ask why it doesnt work
     public static String objectToMessage(Object object) throws JsonProcessingException {
         Class<?> clazz = object.getClass();
         String header = Utility.getResponseType(object.toString());

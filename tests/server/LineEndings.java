@@ -41,6 +41,7 @@ class LineEndings {
 
     @AfterEach
     void cleanup() throws IOException {
+        out.println("BYE");
         s.close();
     }
 

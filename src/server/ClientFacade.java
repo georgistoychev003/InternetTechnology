@@ -91,27 +91,36 @@ public class ClientFacade {
         }
     }
 
-    public FileReceiveResponseMessage handleFileReceiveResponse(String message) {
+    public Message handleFileReceiveResponse(String message) {
         String fileSender = Utility.extractParameterFromJson(message, "sender");
         String response = Utility.extractParameterFromJson(message, "response");
         String uuid = Utility.extractParameterFromJson(message, "uuid");
+
+        assert response != null;
+        if (!response.equals("1") && !response.equals("-1")) {
+            // Invalid response
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8003");
+        }
+
+        if (response.equals("1") && uuid.length() != 36) {
+            // Invalid UUID sent
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8004");
+        }
+
         FileReceiveResponseMessage responseMessage = new FileReceiveResponseMessage(fileSender,response, uuid);
         ClientHandler recipientHandler = Server.getLoggedInUsers().get(responseMessage.getSender());
-        recipientHandler.sendMessage(responseMessage.getOverallData());
+        if (recipientHandler != null) {
+            recipientHandler.sendMessage(responseMessage.getOverallData());
+        } else  {
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8005");
+        }
         return responseMessage;
-//        if ("1".equals(response)) {
-//            System.out.println("File transfer accepted by " + username);
-//        } else if ("-1".equals(response)) {
-//            System.out.println("File transfer rejected by " + username);
-//        } else {
-//            System.out.println("Invalid file transfer response received from " + username);
-//        }
     }
 
     public ResponseMessage handleGameCreateRequest() {
         if (clientHandler.getUsername() == null) {
             // User is not logged in
-            return new ResponseMessage("PRIVATE_MESSAGE_RESP", "ERROR", "6000");
+            return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "6000");
         }
 
         GuessingGame game = getGuessingGame();
@@ -163,8 +172,11 @@ public class ClientFacade {
 
         // Check if the recipient exists and is different from the sender
         ClientHandler receiverHandler = Server.getLoggedInUsers().get(receiverUsername);
-        if (receiverHandler == null || senderUsername.equals(receiverUsername)) {
-            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8001"); // Recipient not found or sender is the same as recipient
+        if (receiverHandler == null) {
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8001"); // Recipient not found
+        }
+        if (senderUsername.equals(receiverUsername)) {
+            return new ResponseMessage("FILE_TRANSFER_RESP", "ERROR", "8002"); // Sender is the same as recipient
         }
 
 

@@ -4,11 +4,11 @@ import messages.GuessingGameInviteMessage;
 import messages.Message;
 import messages.ResponseMessage;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
@@ -46,18 +46,73 @@ public class Server {
 
     private void handleFileTransferConnections() {
         List<FileTransferHandler> connectedClients = new ArrayList<>();
+        // Store the indicator, uuid and socket of each client that connects
+        ConcurrentHashMap<Character, HashMap<String, Socket>> clients = new ConcurrentHashMap<>();
+        clients.put('S', new HashMap<>());
+        clients.put('R', new HashMap<>());
         try {
             while (!fileTransferServerSocket.isClosed()) {
-                Socket receiverSocket = fileTransferServerSocket.accept();
-                Socket senderSocket = fileTransferServerSocket.accept();
-                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostAddress());
-                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostAddress());
-                System.out.println("File transfer connection accepted 1: " + senderSocket.getLocalPort());
-                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostName());
-                System.out.println("File transfer connection accepted 2: " + receiverSocket.getLocalPort());
-                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostName());
-                FileTransferHandler fileTransferHandler = new FileTransferHandler(senderSocket, receiverSocket);
-                new Thread(fileTransferHandler).start();
+                Socket clientSocket = fileTransferServerSocket.accept();
+                DataInputStream dataInputStream1 = new DataInputStream(clientSocket.getInputStream());
+
+                // Get the indicator and the uuid of the connected client
+                char indicator = (char)dataInputStream1.readByte();
+                byte[] uuidBytes = new byte[36];
+                dataInputStream1.readFully(uuidBytes);
+                String uuid = new String(uuidBytes);
+
+                // Add connected client to client list
+                HashMap<String, Socket> clientMap = clients.get(indicator);
+                clientMap.put(uuid, clientSocket);
+                clients.put(indicator, clientMap);
+
+                // Get clients with opposite roles than the connected clients
+                HashMap<String, Socket> otherClients = null;
+                if (indicator == 'S') {
+                    otherClients = clients.get('R');
+                } else if (indicator == 'R') {
+                    otherClients = clients.get('S');
+                }
+
+                // Try to find a matching pair of the client that connected to start the transfer between them
+                if (otherClients != null) {
+                    for (Map.Entry<String,Socket> entry : otherClients.entrySet()) {
+                        if (entry.getKey().equals(uuid)){
+                            System.out.println("Sender/Receiver match found with uuid: " +uuid);
+                            FileTransferHandler fileTransferHandler = null;
+                            if (indicator == 'S') {
+                                fileTransferHandler = new FileTransferHandler(clientSocket, entry.getValue());
+                            } else if (indicator == 'R') {
+                                fileTransferHandler = new FileTransferHandler(entry.getValue(), clientSocket);
+                            }
+                            new Thread(fileTransferHandler).start();
+                        }
+                    }
+                }
+
+//                Socket secondSocket = fileTransferServerSocket.accept();
+//                DataInputStream dataInputStream2 = new DataInputStream(secondSocket.getInputStream());
+//                Socket senderSocket;
+//                Socket receiverSocket;
+//                if ((char)dataInputStream1.readByte() == 'S') {
+//                    senderSocket = firstSocket;
+//                } else if ((char)dataInputStream1.readByte() == 'R') {
+//                    receiverSocket = firstSocket;
+//                }
+//
+//                if ((char)dataInputStream2.readByte() == 'S') {
+//                    senderSocket = secondSocket;
+//                } else if ((char)dataInputStream2.readByte() == 'R') {
+//                    receiverSocket = secondSocket;
+//                }
+////                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostAddress());
+////                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostAddress());
+////                System.out.println("File transfer connection accepted 1: " + senderSocket.getLocalPort());
+////                System.out.println("File transfer connection accepted 1: " + senderSocket.getInetAddress().getHostName());
+////                System.out.println("File transfer connection accepted 2: " + receiverSocket.getLocalPort());
+////                System.out.println("File transfer connection accepted 2: " + receiverSocket.getInetAddress().getHostName());
+//                FileTransferHandler fileTransferHandler = new FileTransferHandler(senderSocket, receiverSocket);
+//                new Thread(fileTransferHandler).start();
             }
         } catch (IOException e) {
             System.out.println("An error occurred in the file transfer server: " + e.getMessage());
