@@ -91,7 +91,8 @@ public class ServerInput implements Runnable {
                     System.out.println(MessageHandler.determineMessagePrintContents(globalMessage));
                 }
                 case "LOGIN_RESP", "BYE_RESP", "BROADCAST_RESP", "PRIVATE_MESSAGE_RESP", "GAME_CREATE_RESP",
-                        "GAME_START_RESP", "GAME_JOIN_RESP", "GAME_ERROR_RESP", "FILE_TRANSFER_RESP", "SESSION_KEY_EXCHANGE_RESP" -> {
+                        "GAME_START_RESP", "GAME_JOIN_RESP", "GAME_ERROR_RESP", "FILE_TRANSFER_RESP", "SESSION_KEY_EXCHANGE_RESP",
+                        "ENCRYPTED_MESSAGE_SEND_RESP" -> {
                     String responseType = Utility.getResponseType(response);
                     String status = Utility.extractParameterFromJson(response, "status");
                     //If status is OK, the code is empty
@@ -152,6 +153,12 @@ public class ServerInput implements Runnable {
                     PublicKeyResponseMessage keyResponseMessage = new PublicKeyResponseMessage(publicKeyUsername, publicKey);
                     handlePublicKeyResponse(keyResponseMessage);
                 }
+                case "ENCRYPTED_MESSAGE" -> {
+                    String senderUsername = Utility.extractParameterFromJson(response, "sender");
+                    String encryptedMessage = Utility.extractParameterFromJson(response, "encryptedMessage");
+                    EncryptedMessage privateMessage = new EncryptedMessage(senderUsername, encryptedMessage);
+                    System.out.println(MessageHandler.determineMessagePrintContents(privateMessage));
+                }
                 default -> System.out.println(command + " Response: " + response);
             }
         }
@@ -185,12 +192,14 @@ public class ServerInput implements Runnable {
         PublicKey publicKey = EncryptionUtilities.convertStringToPublicKey(response.getPublicKey());
 
         SecretKey sessionKey = EncryptionUtilities.generateSessionKey();
+        Client.addSession(response.getUsername(), sessionKey);
         byte[] encryptedSessionKey = EncryptionUtilities.encryptSessionKey(sessionKey, publicKey);
 
 
         // Prepare and send session key exchange request to server
         sendSessionKeyExchangeRequest(response.getUsername(), encryptedSessionKey);
 
+        sendEncryptedMessage(response.getUsername(), Client.getPendingEncryptedMessages().get(response.getUsername()));
     }
 
 
@@ -198,10 +207,21 @@ public class ServerInput implements Runnable {
     private void sendSessionKeyExchangeRequest(String receiverUsername, byte[] encryptedSessionKey) {
         String encryptedKeyStr = Base64.getEncoder().encodeToString(encryptedSessionKey);
         SessionKeyExchangeRequestMessage requestMessage = new SessionKeyExchangeRequestMessage(receiverUsername, encryptedKeyStr);
+
         sendToServer(requestMessage.getOverallData());
     }
 
-
+    private void sendEncryptedMessage(String receiverUsername, String message) {
+        String encryptedMessage;
+        try {
+            byte[] encryptedMessageBytes = EncryptionUtilities.encryptMessage(message, Client.getSessionHolder().get(receiverUsername));
+            encryptedMessage = new String(encryptedMessageBytes);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        EncryptedMessageReq encryptedMessageReq = new EncryptedMessageReq(receiverUsername, encryptedMessage);
+        sendToServer(encryptedMessageReq.getOverallData());
+    }
 
 
     private void sendToServer(String message) {

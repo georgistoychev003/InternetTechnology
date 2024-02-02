@@ -14,6 +14,7 @@ public class ResponseHandler {
                 case "GAME_START_RESP" -> "Game is starting. Guessing range is 1 - 50. Good luck!";
                 case "FILE_TRANSFER_RESP" -> "Your file transfer request was sent to the desired recipient. The recipient can accept or decline your request!";
                 case "SESSION_KEY_EXCHANGE_RESP" -> "Your session key was successfully distributed to the recipient";
+                case "ENCRYPTED_MESSAGE_SEND_RESP" -> "Your encrypted private message was successfully sent";
                 default -> "Response message could not be determined";
             };
         } else {

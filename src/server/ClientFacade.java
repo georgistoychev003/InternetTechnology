@@ -239,10 +239,24 @@ public class ClientFacade {
     }
 
 
+    public ResponseMessage handleEncryptedMessage(EncryptedMessageReq encryptedMessageReq, String username) {
+        String receiverUsername = encryptedMessageReq.getReceiver();
+        String encryptedMessage = encryptedMessageReq.getEncryptedMessage();
+
+        ClientHandler receiverHandler = Server.getLoggedInUsers().get(receiverUsername);
+        if (receiverHandler != null) {
+            EncryptedMessage encryptedMessageClass = new EncryptedMessage(username, encryptedMessage);
+            receiverHandler.sendMessage(encryptedMessageClass.getOverallData());
+
+            return new ResponseMessage("ENCRYPTED_MESSAGE_SEND_RESP", "OK");
+        } else {
+            return new ResponseMessage("ENCRYPTED_MESSAGE_SEND_RESP", "ERROR", "1000");
+        }
+    }
+
 
 
     private GuessingGame getGuessingGame() {
         return GuessingGame.getInstance();
     }
-
 }

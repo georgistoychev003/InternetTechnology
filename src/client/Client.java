@@ -1,5 +1,6 @@
 package client;
 
+import javax.crypto.SecretKey;
 import java.io.*;
 import java.net.Socket;
 import java.security.KeyPairGenerator;
@@ -20,9 +21,10 @@ public class Client {
     private Socket socket;
     private static HashMap<String, FileTransfer> fileTransfersMap = new HashMap<>();
     private Scanner scanner;
-    private PrivateKey privateKey;
+    private static PrivateKey privateKey;
     private static PublicKey publicKey;
-    private HashMap<String, String> pendingEncryptedMessages = new HashMap<>();
+    private static HashMap<String, String> pendingEncryptedMessages = new HashMap<>();
+    private static HashMap<String, SecretKey> sessionHolder = new HashMap<>();
 
     public Client() {
         scanner = new Scanner(System.in);
@@ -34,8 +36,8 @@ public class Client {
             socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
 
 
-            ClientInput clientInput = new ClientInput(this,socket);
-            ServerInput serverInput = new ServerInput(this.socket);
+            ClientInput clientInput = new ClientInput(socket);
+            ServerInput serverInput = new ServerInput(socket);
             Thread serverThread = new Thread(serverInput);
             Thread clientThread = new Thread(clientInput);
 
@@ -56,7 +58,7 @@ public class Client {
     public static void addFileTransferRequest(FileTransfer fileTransfer) {
         fileTransfersMap.put(fileTransfer.getSender(), fileTransfer);
     }
-    public void storeEncryptedMessage(String recipient, String message) {
+    public static void storeEncryptedMessage(String recipient, String message) {
         pendingEncryptedMessages.put(recipient, message);
     }
 
@@ -79,12 +81,28 @@ public class Client {
         }
     }
     // Method to get the public key in a transferable format
-    public String getEncodedPublicKey() {
-        return Base64.getEncoder().encodeToString(this.publicKey.getEncoded());
+    public static String getEncodedPublicKey() {
+        return Base64.getEncoder().encodeToString(publicKey.getEncoded());
     }
 
     public static HashMap<String, FileTransfer> getFileTransfersMap() {
         return fileTransfersMap;
+    }
+
+    public static HashMap<String, SecretKey> getSessionHolder() {
+        return sessionHolder;
+    }
+
+    public static void addSession(String username, SecretKey sessionKey) {
+        sessionHolder.put(username, sessionKey);
+    }
+
+    public static PrivateKey getPrivateKey() {
+        return privateKey;
+    }
+
+    public static HashMap<String, String> getPendingEncryptedMessages() {
+        return pendingEncryptedMessages;
     }
 
     //TODO : ask if this method should exist

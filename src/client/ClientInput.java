@@ -14,13 +14,11 @@ public class ClientInput implements Runnable {
     private BufferedReader input;
     private PrintWriter output;
     private Scanner scanner;
-    private Client client;
     private ObjectMapper mapper;
     private String username;
     private Socket fileTransferSocket;
 
-    public ClientInput(Client client,Socket socket) throws IOException {
-        this.client = client;
+    public ClientInput(Socket socket) throws IOException {
         this.socket = socket;
         input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         output = new PrintWriter(socket.getOutputStream(), true);
@@ -101,11 +99,30 @@ public class ClientInput implements Runnable {
         String receiverUsername = parts[2];
         String message = parts[3];
 
-        // Store the message locally
-        client.storeEncryptedMessage(receiverUsername, message);
+        // Check if there is a session already established with the user
+        if (Client.getSessionHolder().containsKey(receiverUsername)) {
+            sendEncryptedMessage(receiverUsername, message);
+        } else {
+            // Store the message locally
+            Client.storeEncryptedMessage(receiverUsername, message);
 
-        // Request server for the recipient's public key
-        sendPublicKeyRequest(receiverUsername);
+            // Request server for the recipient's public key
+            sendPublicKeyRequest(receiverUsername);
+        }
+
+
+    }
+
+    private void sendEncryptedMessage(String receiverUsername, String message) {
+        String encryptedMessage;
+        try {
+            byte[] encryptedMessageBytes = EncryptionUtilities.encryptMessage(message, Client.getSessionHolder().get(receiverUsername));
+            encryptedMessage = new String(encryptedMessageBytes);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        EncryptedMessageReq encryptedMessageReq = new EncryptedMessageReq(receiverUsername, encryptedMessage);
+        sendToServer(encryptedMessageReq.getOverallData());
     }
 
     private void sendPublicKeyRequest(String receiverUsername) {
@@ -292,7 +309,7 @@ public class ClientInput implements Runnable {
     }
 
     private void sendPublicKey() {
-        String publicKey = this.client.getEncodedPublicKey();
+        String publicKey = Client.getEncodedPublicKey();
         PublicKeyMessage publicKeyMessage = new PublicKeyMessage(this.username, publicKey);
         sendToServer(publicKeyMessage.getOverallData());
     }

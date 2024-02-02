@@ -142,6 +142,13 @@ public class ClientHandler implements Runnable {
                     SessionKeyExchangeRequestMessage requestMessage = new SessionKeyExchangeRequestMessage(usernameOfReceiver, encryptedSessionKey);
                     clientFacade.handleSessionKeyExchange(requestMessage, this.username);
                     break;
+                case "ENCRYPTED_MESSAGE_SEND_REQ":
+                    String usernameOfEncryptedReceiver = Utility.extractParameterFromJson(message, "receiver");
+                    String encryptedMessage = Utility.extractParameterFromJson(message, "encryptedMessage");
+                    EncryptedMessageReq encryptedMessageReq = new EncryptedMessageReq(usernameOfEncryptedReceiver, encryptedMessage);
+                    ResponseMessage encryptionMessageResponse = clientFacade.handleEncryptedMessage(encryptedMessageReq, this.username);
+                    sendMessage(encryptionMessageResponse.getOverallData());
+                    break;
                 default:
                     System.out.println(message);
                     sendMessage("UNKNOWN_COMMAND");

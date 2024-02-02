@@ -7,8 +7,10 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 
 public class EncryptionUtilities {
@@ -37,5 +39,9 @@ public class EncryptionUtilities {
         IvParameterSpec ivParams = new IvParameterSpec(iv);
         cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKey.getEncoded(), "AES"), ivParams);
         return cipher.doFinal(message.getBytes());
+    }
+
+    public static String decryptMessage(String encryptedMessage, PrivateKey privateKey, SecretKey sessionKey) {
+       return "";
     }
 }
