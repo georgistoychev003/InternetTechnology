@@ -44,7 +44,7 @@ class AcceptedUsernames {
     }
 
     @Test
-    void TC1_1_userNameWithThreeCharactersIsAccepted() throws JsonProcessingException {
+    void TC1_1_userNameWithThreeCharactersIsAccepted(){
         receiveLineWithTimeout(in); //welcome message
         out.println(new LoginMessage("mym"));
         out.flush();
@@ -54,7 +54,7 @@ class AcceptedUsernames {
     }
 
     @Test
-    void TC1_2_userNameWithTwoCharactersReturnsError() throws JsonProcessingException {
+    void TC1_2_userNameWithTwoCharactersReturnsError() {
         receiveLineWithTimeout(in); //welcome message
         out.println(new LoginMessage("my"));
         out.flush();
@@ -64,7 +64,7 @@ class AcceptedUsernames {
     }
 
     @Test
-    void TC1_3_userNameWith14CharactersIsAccepted() throws JsonProcessingException {
+    void TC1_3_userNameWith14CharactersIsAccepted()  {
         receiveLineWithTimeout(in); //welcome message
         out.println(new LoginMessage("abcdefghijklmn"));
         out.flush();
@@ -74,7 +74,7 @@ class AcceptedUsernames {
     }
 
     @Test
-    void TC1_4_userNameWith15CharectersReturnsError() throws JsonProcessingException {
+    void TC1_4_userNameWith15CharectersReturnsError()  {
         receiveLineWithTimeout(in); //welcome message
         out.println(new LoginMessage("abcdefghijklmop"));
         out.flush();
@@ -84,7 +84,7 @@ class AcceptedUsernames {
     }
 
     @Test
-    void TC1_5_userNameWithStarReturnsError() throws JsonProcessingException {
+    void TC1_5_userNameWithStarReturnsError() {
         receiveLineWithTimeout(in); //welcome message
         out.println(new LoginMessage("*a*"));
         out.flush();

@@ -22,29 +22,26 @@ public class GuessingGame implements Runnable {
     private long gameStartTime;
     private ConcurrentHashMap<String, Long> guessTimes;
     private ConcurrentHashMap<String, ClientHandler> participants;
-    private ConcurrentHashMap<String, Boolean> usersCorrectlyGuessed;
     private ScheduledExecutorService gameTimer;
     private final ReentrantLock lock = new ReentrantLock();
-    private final ObjectMapper mapper = new ObjectMapper();
 
     private GuessingGame() {
         this.gameInitiated = false;
         this.participants = new ConcurrentHashMap<>();
         this.guessTimes = new ConcurrentHashMap<>();
-        this.usersCorrectlyGuessed = new ConcurrentHashMap<>();
         gameTimer = Executors.newSingleThreadScheduledExecutor();
     }
 
     public void addParticipant(ClientHandler participant) {
         if (!participants.containsKey(participant.getUsername()) && !gameStarted) {
             participants.put(participant.getUsername(), participant);
-//            usersCorrectlyGuessed.put(participant.getUsername(), false);
         }
     }
 
     public boolean isGameInitiated() {
         return gameInitiated;
     }
+
     public boolean isGameInProgress() {
         return gameStarted;
     }
@@ -68,8 +65,8 @@ public class GuessingGame implements Runnable {
         }
         return new ResponseMessage("GAME_ERROR_RESP", "ERROR", "9000");
     }
-    public ResponseMessage startGame(ClientHandler initiator) {
-        System.out.println("is initiated: " + gameInitiated);
+
+    public ResponseMessage startGame() {
         if (gameInitiated) {
             lock.lock();
             try {
@@ -120,7 +117,6 @@ public class GuessingGame implements Runnable {
         if (number == secretRandomNumber) {
             long timeTaken = System.currentTimeMillis() - gameStartTime;
             guessTimes.put(username, timeTaken);
-//            usersCorrectlyGuessed.put(username, true);
             participants.get(username).setGuessedSecretNumber(true);
             if (allParticipantsGuessedCorrectly()) {
                 endGame();
@@ -154,7 +150,6 @@ public class GuessingGame implements Runnable {
         participants.clear();
         guessTimes.clear();
     }
-
 
 
     public ConcurrentHashMap<String, ClientHandler> getParticipants() {

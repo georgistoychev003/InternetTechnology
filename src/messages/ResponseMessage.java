@@ -44,10 +44,6 @@ public class ResponseMessage extends Message{
         return responseType;
     }
 
-    public void setResponseType(String responseType) {
-        this.responseType = responseType;
-//        setOverallData(determineMessageContents(responseType, status, code));
-    }
 
     public String getStatus() {
         return status;

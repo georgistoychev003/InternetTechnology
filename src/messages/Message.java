@@ -2,7 +2,7 @@ package messages;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class Message {
+public abstract class Message {
 
     private String overallData;
     private ObjectMapper mapper = new ObjectMapper();

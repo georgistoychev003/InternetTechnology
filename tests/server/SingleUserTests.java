@@ -56,7 +56,7 @@ class SingleUserTests {
     }
 
     @Test
-    void TC5_2_validIdentMessageReturnsOkMessage() throws JsonProcessingException {
+    void TC5_2_validIdentMessageReturnsOkMessage()  {
         receiveLineWithTimeout(in); //welcome message
         out.println((new LoginMessage("myname").getOverallData()));
         System.out.println((new LoginMessage("myname").getOverallData()));
@@ -64,12 +64,11 @@ class SingleUserTests {
         String serverResponse = receiveLineWithTimeout(in);
         System.out.println(serverResponse);
         ResponseMessage resp = Utility.createResponseClass(serverResponse);
-//        ResponseMessage resp = Utils.messageToObject(serverResponse); // TODO: ask ... Utils
         assertEquals("OK", resp.getStatus());
     }
 
     @Test
-    void TC5_3_invalidJsonMessageReturnsParseError() throws JsonProcessingException {
+    void TC5_3_invalidJsonMessageReturnsParseError()  {
         receiveLineWithTimeout(in); //welcome message
         out.println("LOGIN {\"}");
         out.flush();
@@ -86,12 +85,11 @@ class SingleUserTests {
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
         ResponseMessage resp = Utility.createResponseClass(serverResponse);
-//        ResponseMessage loginResp = Utils.messageToObject(serverResponse);
         assertEquals(new ResponseMessage("LOGIN_RESP", "ERROR", "5001").getOverallData(), resp.getOverallData());
     }
 
     @Test
-    void TC5_5_pongWithoutPingReturnsErrorMessage() throws JsonProcessingException {
+    void TC5_5_pongWithoutPingReturnsErrorMessage()  {
         receiveLineWithTimeout(in); //welcome message
         out.println("PONG");
         out.flush();
@@ -100,7 +98,7 @@ class SingleUserTests {
     }
 
     @Test
-    void TC5_6_logInTwiceReturnsErrorMessage() throws JsonProcessingException {
+    void TC5_6_logInTwiceReturnsErrorMessage() {
         receiveLineWithTimeout(in); //welcome message
         out.println(new LoginMessage("first").getOverallData());
         out.flush();
@@ -129,7 +127,6 @@ class SingleUserTests {
             Instant finish = Instant.now();
 
             // Make sure the correct response is received
-//            Ping ping = Utils.messageToObject(pingString);
             System.out.println(pingString);
 
             assertNotNull(pingString);
@@ -142,7 +139,7 @@ class SingleUserTests {
     }
 
     @Test
-    void TC5_8_requestingClientListWhenNotLoggedInReturnsError() throws JsonProcessingException {
+    void TC5_8_requestingClientListWhenNotLoggedInReturnsError() {
         receiveLineWithTimeout(in); //welcome message
         out.println(new ClientListMessage("CLIENT_LIST_REQ"));
         out.flush();

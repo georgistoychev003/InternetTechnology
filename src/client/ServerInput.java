@@ -1,37 +1,23 @@
 package client;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messages.*;
+import messages.messagehandling.MessageHandler;
+import messages.messagehandling.ResponseHandler;
 import utils.Utility;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
-import java.math.BigInteger;
 import java.net.Socket;
 import java.net.SocketException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.KeyFactory;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
-
-import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
 public class ServerInput implements Runnable {
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
     private ObjectMapper mapper;
-    private Socket fileTransferSocket;
 
     public ServerInput(Socket socket) throws IOException {
         this.socket = socket;
@@ -50,7 +36,6 @@ public class ServerInput implements Runnable {
             }
         } catch (SocketException e) {
             System.out.println("Connection to server lost.");
-            // we may ask Gerralt if we have to try and reconnect again if the server reruns
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -61,8 +46,6 @@ public class ServerInput implements Runnable {
 
     private void handleServerResponse(String response) throws Exception {
         String command = Utility.getResponseType(response);
-        String[] responseParts = response.split(" ", 2);
-        String body = (responseParts.length > 1) ? responseParts[1] : "";
         if (response.startsWith("PING")) {
             sendToServer("PONG");
         } else if (command.equals("WELCOME")) {
@@ -82,8 +65,6 @@ public class ServerInput implements Runnable {
                     System.out.println(MessageHandler.determineMessagePrintContents(leftMessage));
                 }
                 case "BROADCAST" -> {
-                  //  String body = response.split(" ", 2)[1]; // FIXME: Dont do this for empty bodies
-//                    ChatMessage message = mapper.readValue(body, ChatMessage.class);
                     String broadcastUsername = Utility.extractParameterFromJson(response, "username");
                     String broadcastMessage = Utility.extractParameterFromJson(response, "message");
                     GlobalMessage globalMessage = new GlobalMessage(Utility.getResponseType(response), broadcastUsername, broadcastMessage);
@@ -97,12 +78,10 @@ public class ServerInput implements Runnable {
                     String status = Utility.extractParameterFromJson(response, "status");
                     //If status is OK, the code is empty
                     String code = "";
-                    if (!status.equals("OK")){
+                    if (!status.equals("OK")) {
                         code = Utility.extractParameterFromJson(response, "code");
                     }
                     ResponseMessage responseMessage = new ResponseMessage(responseType, status, code);
-//                    ResponseMessage responseMessage = mapper.readValue(body, ResponseMessage.class);
-//                    responseMessage.setResponseType(responseType);
                     System.out.println(ResponseHandler.determineResponseMessagePrint(responseMessage));
                 }
                 case "CLIENT_LIST_RESP" -> {
@@ -114,7 +93,6 @@ public class ServerInput implements Runnable {
                     String receiverUsername = Utility.extractParameterFromJson(response, "receiver");
                     String concreteMessage = Utility.extractParameterFromJson(response, "message");
                     PrivateMessage privateMessage = new PrivateMessage("PRIVATE_MESSAGE", senderUsername, receiverUsername, concreteMessage);
-//                    PrivateMessage privateMessage = mapper.readValue(body, PrivateMessage.class);
                     System.out.println(MessageHandler.determineMessagePrintContents(privateMessage));
                 }
                 case "GAME_INVITE" -> {
@@ -128,7 +106,7 @@ public class ServerInput implements Runnable {
                     System.out.println(MessageHandler.determineMessagePrintContents(guessResponseMessage));
                 }
                 case "GAME_END" -> {
-                    List<Map.Entry<String,Long>> gameResults = Utility.extractGameResultListFromJson(response, "results");
+                    List<Map.Entry<String, Long>> gameResults = Utility.extractGameResultListFromJson(response, "results");
                     EndGameMessage endGameMessage = new EndGameMessage(gameResults);
                     System.out.println(MessageHandler.determineMessagePrintContents(endGameMessage));
                 }
@@ -153,10 +131,26 @@ public class ServerInput implements Runnable {
                     PublicKeyResponseMessage keyResponseMessage = new PublicKeyResponseMessage(publicKeyUsername, publicKey);
                     handlePublicKeyResponse(keyResponseMessage);
                 }
+                case "SESSION_KEY_EXCHANGE_REQ" -> {
+                    String sessionUsername = Utility.extractParameterFromJson(response, "username");
+                    String encryptedSessionKey = Utility.extractParameterFromJson(response, "encryptedSessionKey");
+
+                    SecretKey encryptedSecretKey = EncryptionUtilities.convertStringToSecretKey(encryptedSessionKey);
+                    byte[] sessionKey = EncryptionUtilities.decryptSessionKey(encryptedSecretKey, Client.getPrivateKey());
+                    String decryptedSessionKeyString = EncryptionUtilities.convertByteArrayKeyToString(sessionKey);
+
+                    SecretKey decryptedSessionKey = EncryptionUtilities.convertStringToSecretKey(decryptedSessionKeyString);
+
+                    Client.addSession(sessionUsername, decryptedSessionKey);
+                }
                 case "ENCRYPTED_MESSAGE" -> {
                     String senderUsername = Utility.extractParameterFromJson(response, "sender");
                     String encryptedMessage = Utility.extractParameterFromJson(response, "encryptedMessage");
-                    EncryptedMessage privateMessage = new EncryptedMessage(senderUsername, encryptedMessage);
+
+                    byte[] encryptedMessageBytes = EncryptionUtilities.convertStringToByteArray(encryptedMessage);
+                    String decriptedMessage = EncryptionUtilities.decryptMessage(encryptedMessageBytes, Client.getSessionHolder().get(senderUsername));
+
+                    EncryptedMessage privateMessage = new EncryptedMessage(senderUsername, decriptedMessage);
                     System.out.println(MessageHandler.determineMessagePrintContents(privateMessage));
                 }
                 default -> System.out.println(command + " Response: " + response);
@@ -165,44 +159,33 @@ public class ServerInput implements Runnable {
     }
 
     private void handleFileTransfer(FileReceiveResponseMessage fileReceiveResponse) {
-        if (fileReceiveResponse.getResponse().equals("1")){
+        if (fileReceiveResponse.getResponse().equals("1")) {
 
             FileTransfer fileTransfer = Client.getFileTransfersMap().get(fileReceiveResponse.getSender());
             fileTransfer.setUuid(fileReceiveResponse.getUuid());
             Client.addFileTransferRequest(fileTransfer);
             Client.getFileTransfersMap().get(fileReceiveResponse.getSender()).initiateFileTransfer();
+        } else if (fileReceiveResponse.getResponse().equals("-1")) {
+            System.out.println("The receiver declined the file transfer request");
         }
     }
 
-//    private void handlePublicKeyResponse(String response) {
-//        String status = Utility.extractParameterFromJson(response, "status");
-//        if ("OK".equals(status)) {
-//            String publicKey = Utility.extractParameterFromJson(response, "publicKey");
-//            System.out.println("The public key of the recipient is: " + publicKey);
-//        } else {
-//            String responseType = Utility.getResponseType(response);
-//            String errorCode = Utility.extractParameterFromJson(response, "code");
-//            ResponseMessage errorResponse = new ResponseMessage(responseType, "ERROR", errorCode);
-//            System.out.println(ResponseHandler.determineResponseMessagePrint(errorResponse));
-//        }
-//    }
 
     private void handlePublicKeyResponse(PublicKeyResponseMessage response) throws Exception {
-        System.out.println("The public key of the recipient is: " + response.getPublicKey());
+//        System.out.println("The public key of the recipient is: " + response.getPublicKey());
         PublicKey publicKey = EncryptionUtilities.convertStringToPublicKey(response.getPublicKey());
 
         SecretKey sessionKey = EncryptionUtilities.generateSessionKey();
         Client.addSession(response.getUsername(), sessionKey);
         byte[] encryptedSessionKey = EncryptionUtilities.encryptSessionKey(sessionKey, publicKey);
 
-
         // Prepare and send session key exchange request to server
         sendSessionKeyExchangeRequest(response.getUsername(), encryptedSessionKey);
 
-        sendEncryptedMessage(response.getUsername(), Client.getPendingEncryptedMessages().get(response.getUsername()));
+        // Send the encrypted message
+        sendEncryptedMessage(response.getUsername(), Client.retrieveEncryptedMessage(response.getUsername()));
+        Client.removeEncryptedMessage(response.getUsername());
     }
-
-
 
     private void sendSessionKeyExchangeRequest(String receiverUsername, byte[] encryptedSessionKey) {
         String encryptedKeyStr = Base64.getEncoder().encodeToString(encryptedSessionKey);
@@ -215,7 +198,7 @@ public class ServerInput implements Runnable {
         String encryptedMessage;
         try {
             byte[] encryptedMessageBytes = EncryptionUtilities.encryptMessage(message, Client.getSessionHolder().get(receiverUsername));
-            encryptedMessage = new String(encryptedMessageBytes);
+            encryptedMessage = EncryptionUtilities.convertByteArrayKeyToString(encryptedMessageBytes);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

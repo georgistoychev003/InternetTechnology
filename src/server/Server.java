@@ -45,7 +45,6 @@ public class Server {
     }
 
     private void handleFileTransferConnections() {
-        List<FileTransferHandler> connectedClients = new ArrayList<>();
         // Store the indicator, uuid and socket of each client that connects
         ConcurrentHashMap<Character, HashMap<String, Socket>> clients = new ConcurrentHashMap<>();
         clients.put('S', new HashMap<>());
@@ -56,7 +55,7 @@ public class Server {
                 DataInputStream dataInputStream1 = new DataInputStream(clientSocket.getInputStream());
 
                 // Get the indicator and the uuid of the connected client
-                char indicator = (char)dataInputStream1.readByte();
+                char indicator = (char) dataInputStream1.readByte();
                 byte[] uuidBytes = new byte[36];
                 dataInputStream1.readFully(uuidBytes);
                 String uuid = new String(uuidBytes);
@@ -76,9 +75,9 @@ public class Server {
 
                 // Try to find a matching pair of the client that connected to start the transfer between them
                 if (otherClients != null) {
-                    for (Map.Entry<String,Socket> entry : otherClients.entrySet()) {
-                        if (entry.getKey().equals(uuid)){
-                            System.out.println("Sender/Receiver match found with uuid: " +uuid);
+                    for (Map.Entry<String, Socket> entry : otherClients.entrySet()) {
+                        if (entry.getKey().equals(uuid)) {
+                            System.out.println("Sender/Receiver match found with uuid: " + uuid);
                             FileTransferHandler fileTransferHandler = null;
                             if (indicator == 'S') {
                                 fileTransferHandler = new FileTransferHandler(clientSocket, entry.getValue());
@@ -109,6 +108,7 @@ public class Server {
             e.printStackTrace();
         }
     }
+
     public static boolean isLoggedIn(String username) {
         return loggedInUsers.containsKey(username);
     }
@@ -142,24 +142,24 @@ public class Server {
     }
 
 
-    public static void broadcastGameStart(String initiatorUsername, GuessingGame game, ResponseMessage message){
+    public static void broadcastGameStart(String initiatorUsername, GuessingGame game, ResponseMessage message) {
         game.getParticipants().forEach((username, clientHandler) -> {
             if (!username.equals(initiatorUsername)) {
                 clientHandler.sendMessage(message.getOverallData());
             }
         });
     }
+
     public static void storePublicKey(String username, String publicKey) {
         publicKeys.put(username, publicKey);
     }
 
-    public static String getPublicKey(String username) {
-        return publicKeys.get(username);
+    public static void removePublicKey(String username) {
+        publicKeys.remove(username);
     }
 
-
-    public static ClientHandler getClientHandlerByUsername(String username) {
-        return loggedInUsers.get(username);
+    public static String getPublicKey(String username) {
+        return publicKeys.get(username);
     }
 
 

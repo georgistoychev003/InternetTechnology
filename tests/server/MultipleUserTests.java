@@ -54,17 +54,8 @@ class MultipleUserTests {
         outUser1.println("BYE");
         outUser2.println("BYE");
         outUser3.println("BYE");
-//        socketUser1.close();
-//        socketUser2.close();
-//        socketUser3.close();
     }
 
-//    @AfterAll
-//    void closeSockets() throws IOException {
-//        socketUser1.close();
-//        socketUser2.close();
-//        socketUser3.close();
-//    }
 
     @Test
     /* This test is expected to fail with the given NodeJS server because the JOINED is not implemented.

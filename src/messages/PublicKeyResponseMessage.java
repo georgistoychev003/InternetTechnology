@@ -3,7 +3,7 @@ package messages;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class PublicKeyResponseMessage extends ResponseMessage {
+public class PublicKeyResponseMessage extends Message {
 
     private String responseType = "PUBLIC_KEY_RESP";
     private String username;
@@ -26,8 +26,6 @@ public class PublicKeyResponseMessage extends ResponseMessage {
         return overallData;
     }
 
-    // Getters and setters
-
 
     public String getUsername() {
         return username;
@@ -39,10 +37,6 @@ public class PublicKeyResponseMessage extends ResponseMessage {
 
     public String getPublicKey() {
         return publicKey;
-    }
-
-    public void setPublicKey(String publicKey) {
-        this.publicKey = publicKey;
     }
 
     public String getResponseType() {

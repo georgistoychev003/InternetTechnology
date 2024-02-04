@@ -34,7 +34,7 @@ public class EndGameMessage extends Message {
             resultArray[count] = node;
             count++;
         }
-        ObjectNode node = getMapper().createObjectNode()
+        JsonNode node = getMapper().createObjectNode()
                 .put("results", Arrays.toString(resultArray));
         overallData += " " + node.toString();
         return overallData;

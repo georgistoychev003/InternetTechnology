@@ -48,7 +48,7 @@ public class ClientInput implements Runnable {
                 handleFileTransfer(userInput);
             } else if (userInput.startsWith("file receive ")) {
                 handleFileReceiveResponseCommand(userInput);
-            } else if(userInput.startsWith("encrypted private ")){
+            } else if (userInput.startsWith("encrypted message ")) {
                 handleEncryptedPrivateMessageCommand(userInput);
             } else if (userInput.equalsIgnoreCase("logout")) {
                 sendLogoutRequest();
@@ -82,7 +82,7 @@ public class ClientInput implements Runnable {
             System.out.println("Invalid command. Use: private <username> <message>");
             return;
         }
-        //extracting rhe desired username and message
+        //extracting the desired username and message
         String senderUsername = username;
         String receiverUsername = parts[1];
         String message = parts[2];
@@ -117,7 +117,7 @@ public class ClientInput implements Runnable {
         String encryptedMessage;
         try {
             byte[] encryptedMessageBytes = EncryptionUtilities.encryptMessage(message, Client.getSessionHolder().get(receiverUsername));
-            encryptedMessage = new String(encryptedMessageBytes);
+            encryptedMessage = EncryptionUtilities.convertByteArrayKeyToString(encryptedMessageBytes);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -138,11 +138,11 @@ public class ClientInput implements Runnable {
 
 
     private void handleGameCreation() {
-        sendToServer("GAME_CREATE_REQ", null);
+        sendToServer("GAME_CREATE_REQ");
     }
 
     private void handleGameJoin() {
-        sendToServer("GAME_JOIN_REQ", null);
+        sendToServer("GAME_JOIN_REQ");
     }
 
     private void handleGameGuess(String input) {
@@ -187,16 +187,18 @@ public class ClientInput implements Runnable {
         String responseCode = response.equalsIgnoreCase("yes") ? "1" : "-1";
         String uuid = "";
         if (response.equalsIgnoreCase("yes")) {
-            // step 1: send to server that you accept the message
             uuid = UUID.randomUUID().toString();
 
         }
 
+        // send to server that you accept/reject the message
+        // if message rejected uuid will be an empty string
         sendFileReceiveResponse(sender, responseCode, uuid);
 
+        // connect to file transfer port, match with UUID and wait for file
         if (response.equalsIgnoreCase("yes")) {
             try {
-                fileTransferSocket = new Socket("127.0.0.1", 1338);
+                fileTransferSocket = new Socket("127.0.0.1", FileTransfer.FILE_TRANSFER_PORT);
                 fileTransferSocket.getOutputStream().write("R".getBytes());
                 fileTransferSocket.getOutputStream().write(uuid.getBytes());
                 fileTransferSocket.getOutputStream().flush();
@@ -214,8 +216,6 @@ public class ClientInput implements Runnable {
 
                 String fileExtension = new String(fileTransferSocket.getInputStream().readNBytes(3));
                 String checksum = new String(fileTransferSocket.getInputStream().readNBytes(32));
-                System.out.println("File extension: " + fileExtension);
-                System.out.println("Checksum: " + checksum);
 
                 File file = new File(uuid + "." + fileExtension);
                 file.createNewFile();
@@ -276,24 +276,15 @@ public class ClientInput implements Runnable {
         System.out.println("Commands:");
         System.out.println("login <username> - Login to the server");
         System.out.println("list - Show logged in users");
-        System.out.println("message <message> - Send a broadcast message");
+        System.out.println("message <message> - Send a global broadcast message");
         System.out.println("private <username> <message> - Send a private message");
         System.out.println("game create - Creates a number guessing game");
         System.out.println("game join - Join the number guessing game");
         System.out.println("game guess <number> - Attempt to guess the secret number in the Guessing Game");
-        System.out.println("file transfer <username> <filePath> - request to transfer a file to a user by providing the recepeint's username and a file path");
+        System.out.println("file transfer <username> <filePath> - request to transfer a file to a user by providing the recipient's username and a file path");
         System.out.println("file receive <fileSenderUsername> <yes/no> - accept/decline a file that a user wants to transfer to you");
-        System.out.println("encrypted private <username> <message> - send an encrypted private message to a user");
+        System.out.println("encrypted message <username> <message> - send an encrypted private message to a user");
         System.out.println("logout - Logout from the server");
-    }
-
-    private void sendToServer(String command, ObjectNode node) {
-        if (node != null) {
-            String json = node.toString();
-            output.println(command + " " + json);
-        } else {
-            output.println(command);
-        }
     }
 
     private void sendToServer(String message) {
@@ -301,33 +292,31 @@ public class ClientInput implements Runnable {
     }
 
     private void sendLoginRequest(String username) {
-        ObjectNode loginNode = mapper.createObjectNode();
-        loginNode.put("username", username);
         this.username = username;
-        sendToServer("LOGIN", loginNode);
+        LoginMessage loginMessage = new LoginMessage(username);
+        sendToServer(loginMessage.getOverallData());
         sendPublicKey();
     }
 
     private void sendPublicKey() {
-        String publicKey = Client.getEncodedPublicKey();
+        String publicKey = EncryptionUtilities.getEncodedPublicKey();
         PublicKeyMessage publicKeyMessage = new PublicKeyMessage(this.username, publicKey);
         sendToServer(publicKeyMessage.getOverallData());
     }
 
     private void sendBroadcastRequest(String message) {
-        ObjectNode messageNode = mapper.createObjectNode();
-        messageNode.put("message", message);
-        sendToServer("BROADCAST_REQ", messageNode);
+        GlobalMessage globalMessage = new GlobalMessage("BROADCAST_REQ", null, message);
+        sendToServer(globalMessage.getOverallData());
     }
 
     protected void sendLogoutRequest() {
         if (username != null) {
-            sendToServer("BYE", null);
+            sendToServer("BYE");
         }
     }
 
     private void sendListRequest() {
-        sendToServer("CLIENT_LIST_REQ", null);
+        sendToServer("CLIENT_LIST_REQ");
     }
 
     public boolean isLoggedIn() {
@@ -342,6 +331,5 @@ public class ClientInput implements Runnable {
             sendLogoutRequest();
         }
     }
-
 
 }

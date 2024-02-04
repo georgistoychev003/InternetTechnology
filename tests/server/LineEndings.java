@@ -46,7 +46,7 @@ class LineEndings {
     }
 
     @Test
-    void TC2_1_loginFollowedByBROADCASTWithWindowsLineEndingsReturnsOk() throws JsonProcessingException {
+    void TC2_1_loginFollowedByBROADCASTWithWindowsLineEndingsReturnsOk() {
         receiveLineWithTimeout(in); //welcome message
         String message = new LoginMessage("myname") + "\r\n" +
                 new GlobalMessage("BROADCAST_REQ","myname","a") + "\r\n";
@@ -62,7 +62,7 @@ class LineEndings {
     }
 
     @Test
-    void TC2_2_loginFollowedByBROADCASTWithLinuxLineEndingsReturnsOk() throws JsonProcessingException {
+    void TC2_2_loginFollowedByBROADCASTWithLinuxLineEndingsReturnsOk()  {
         receiveLineWithTimeout(in); //welcome message
         String message = new LoginMessage("myname") + "\n" +
                 new GlobalMessage("BROADCAST_REQ","user2","a") + "\n";

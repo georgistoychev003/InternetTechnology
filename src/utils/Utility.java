@@ -14,7 +14,8 @@ import java.util.Map;
 
 public class Utility {
     private static ObjectMapper mapper = new ObjectMapper();
-    public static JsonNode getMessageContents(String data){
+
+    public static JsonNode getMessageContents(String data) {
         String[] parts = data.split(" ", 2);
         //extract the first part-the command
         String responseType = parts[0];
@@ -25,7 +26,7 @@ public class Utility {
         try {
             node = mapper.readTree(jsonPart);
             //add responseType to the node that is being returned
-            ((ObjectNode)node).put("responseType", responseType);
+            ((ObjectNode) node).put("responseType", responseType);
         } catch (JsonProcessingException e) {
             System.out.println("Invalid JSON content: " + jsonPart);
             throw new RuntimeException(e);
@@ -34,35 +35,34 @@ public class Utility {
         return node;
     }
 
-//    public static String extractParameterFromJson(String data, String param){
-//        JsonNode jsonNode = getMessageContents(data);
-//        return jsonNode.get(param).asText();
-//    }
-    public static String extractParameterFromJson(String data, String param){
+
+    public static String extractParameterFromJson(String data, String param) {
         JsonNode jsonNode = getMessageContents(data);
         JsonNode valueNode = jsonNode.get(param);
         return valueNode != null ? valueNode.asText() : null;
     }
 
 
-    public static List<String> extractUserListFromJson(String data, String param){
+    public static List<String> extractUserListFromJson(String data, String param) {
         JsonNode jsonNode = getMessageContents(data).get(param);
         String usersString = jsonNode.asText();
         try {
-            return mapper.readValue(usersString, new TypeReference<List<String>>() {});
+            return mapper.readValue(usersString, new TypeReference<List<String>>() {
+            });
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static List<Map.Entry<String,Long>> extractGameResultListFromJson(String data, String param){
+    public static List<Map.Entry<String, Long>> extractGameResultListFromJson(String data, String param) {
         JsonNode jsonNode = getMessageContents(data).get(param);
         try {
             String jsonArrayString = jsonNode.asText().replaceAll("^\"|\"$", "");
 
             // Convert the "time" field to Long if it's a valid long value, otherwise keep it as a string
             ObjectMapper objectMapper = new ObjectMapper();
-            List<Map<String, Object>> rawList = objectMapper.readValue(jsonArrayString, new TypeReference<List<Map<String, Object>>>() {});
+            List<Map<String, Object>> rawList = objectMapper.readValue(jsonArrayString, new TypeReference<List<Map<String, Object>>>() {
+            });
 
             List<Map.Entry<String, Long>> resultList = new ArrayList<>();
             for (Map<String, Object> entry : rawList) {
@@ -77,7 +77,7 @@ public class Utility {
         }
     }
 
-    public static String getResponseType(String data){
+    public static String getResponseType(String data) {
         String[] parts = data.split(" ", 2);
         return parts[0];
     }
@@ -86,7 +86,7 @@ public class Utility {
         String responseType = Utility.getResponseType(response);
         String status = Utility.extractParameterFromJson(response, "status");
         String code = "";
-        if (status.equals("ERROR")){
+        if (status.equals("ERROR")) {
             code = Utility.extractParameterFromJson(response, "code");
         }
         return new ResponseMessage(responseType, status, code);

@@ -1,6 +1,7 @@
-package messages;
+package messages.messagehandling;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import messages.*;
 import utils.Utility;
 
 import java.util.List;

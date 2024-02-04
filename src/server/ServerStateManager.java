@@ -1,6 +1,5 @@
 package server;
 
-import messages.GuessingGameInviteMessage;
 
 public class ServerStateManager {
 

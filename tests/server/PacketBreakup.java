@@ -44,7 +44,7 @@ class PacketBreakup {
     }
 
     @Test
-    void TC4_1_identFollowedByBroadcastWithMultipleFlushReturnsOk() throws JsonProcessingException {
+    void TC4_1_identFollowedByBroadcastWithMultipleFlushReturnsOk() {
         receiveLineWithTimeout(in); //welcome message
         out.print("LOGIN {\"username\":\"m");
         out.flush();

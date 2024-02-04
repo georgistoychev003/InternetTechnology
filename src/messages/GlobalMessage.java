@@ -22,9 +22,15 @@ public class GlobalMessage extends Message{
 
     private String determineMessageContents() {
         String overallData = responseType;
-        JsonNode node = getMapper().createObjectNode()
-                .put("username", username)
-                .put("message", message);
+        JsonNode node;
+        if (username != null) {
+            node = getMapper().createObjectNode()
+                    .put("username", username)
+                    .put("message", message);
+        } else {
+            node = getMapper().createObjectNode()
+                    .put("message", message);
+        }
 
 
         overallData += " " + node.toString();

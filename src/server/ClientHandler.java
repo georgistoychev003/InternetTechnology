@@ -41,7 +41,6 @@ public class ClientHandler implements Runnable {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream));
 
-            //TODO: fix that
             WelcomeMessage welcomeMessage = new WelcomeMessage(Server.VERSION);
             sendMessage(welcomeMessage.getOverallData());
 
@@ -83,7 +82,7 @@ public class ClientHandler implements Runnable {
                     this.handleLogout();
                     break;
                 case "PONG":
-                    if (sentPing.get()){
+                    if (sentPing.get()) {
                         receivedPong.set(true);
                         sentPing.set(false);
                     } else {
@@ -103,10 +102,10 @@ public class ClientHandler implements Runnable {
                     sendMessage(privateMessageResponseToSend.getOverallData());
                     break;
                 case "GAME_CREATE_REQ":
-                    new Thread(() -> handleGameCreateRequest(message)).start();
+                    new Thread(this::handleGameCreateRequest).start();
                     break;
                 case "GAME_JOIN_REQ":
-                    new Thread(() -> handleGameJoinRequest(message)).start();
+                    new Thread(this::handleGameJoinRequest).start();
                     break;
                 case "GUESS_NUMBER":
                     Message guessMessage = clientFacade.handleGameGuess(message);
@@ -140,7 +139,8 @@ public class ClientHandler implements Runnable {
                     String usernameOfReceiver = Utility.extractParameterFromJson(message, "username");
                     String encryptedSessionKey = Utility.extractParameterFromJson(message, "encryptedSessionKey");
                     SessionKeyExchangeRequestMessage requestMessage = new SessionKeyExchangeRequestMessage(usernameOfReceiver, encryptedSessionKey);
-                    clientFacade.handleSessionKeyExchange(requestMessage, this.username);
+                    ResponseMessage responseMessage = clientFacade.handleSessionKeyExchange(requestMessage, this.username);
+                    sendMessage(responseMessage.getOverallData());
                     break;
                 case "ENCRYPTED_MESSAGE_SEND_REQ":
                     String usernameOfEncryptedReceiver = Utility.extractParameterFromJson(message, "receiver");
@@ -155,7 +155,8 @@ public class ClientHandler implements Runnable {
                     break;
             }
         } catch (Exception e) {
-            sendMessage("PARSE_ERROR", e.getMessage());
+            ParseError parseError = new ParseError(e.getMessage());
+            sendMessage(parseError.getOverallData());
         }
     }
 
@@ -180,6 +181,7 @@ public class ClientHandler implements Runnable {
         // Close the connection
         closeConnection();
     }
+
     private void handlePublicKey(String username, String publicKey) {
         try {
             if (username != null && publicKey != null) {
@@ -201,7 +203,7 @@ public class ClientHandler implements Runnable {
                     Thread.sleep(10000); // Send ping every 10 seconds
                     receivedPong.set(false); // Reset the pong
                     sentPing.set(true);
-                    Message pingMessage = new Message("PING");
+                    PingMessage pingMessage = new PingMessage();
                     sendMessage(pingMessage.getOverallData());
 
                     // Wait for 3 seconds for PONG response
@@ -219,21 +221,6 @@ public class ClientHandler implements Runnable {
         }).start();
     }
 
-    protected void sendMessage(String command, String message) {
-        System.out.println("Partial message:" + command + " " + message);
-        try {
-            if (!clientSocket.isClosed()) {
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream));
-                writer.write(command + " " + message);
-                writer.newLine();
-                writer.flush();
-            }
-        } catch (IOException e) {
-            System.err.println("Error sending message to client: " + e.getMessage());
-            closeConnection();
-        }
-    }
-
     protected void sendMessage(String wholeMessage) {
         System.out.println("Whole message:" + wholeMessage);
         try {
@@ -248,7 +235,8 @@ public class ClientHandler implements Runnable {
             closeConnection();
         }
     }
-    private void handleGameCreateRequest(String message) {
+
+    private void handleGameCreateRequest() {
         ResponseMessage gameCreateResponse = clientFacade.handleGameCreateRequest();
         sendMessage(gameCreateResponse.getOverallData());
         if (gameCreateResponse.getStatus().equals("OK")) {
@@ -256,11 +244,11 @@ public class ClientHandler implements Runnable {
             sendMessage(gameStartResponse.getOverallData());
         }
     }
-    private void handleGameJoinRequest(String message) {
+
+    private void handleGameJoinRequest() {
         ResponseMessage joinResponse = clientFacade.handleGameJoinRequest(this.username);
         sendMessage(joinResponse.getOverallData());
     }
-
 
 
     private void closeConnection() {

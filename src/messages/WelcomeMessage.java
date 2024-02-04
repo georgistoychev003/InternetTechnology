@@ -12,7 +12,6 @@ public class WelcomeMessage extends Message{
 
     }
     public WelcomeMessage(String version) {
-//       setOverallData(overallData);
         responseType = "WELCOME";
         msg = "Welcome to the server " + version;
         setOverallData(determineMessageContents());

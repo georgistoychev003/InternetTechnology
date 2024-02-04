@@ -16,11 +16,13 @@ import java.util.Optional;
 
 public class FileTransfer {
 
+    protected static final int FILE_TRANSFER_PORT = 1338;
     private String sender;
     private String receiver;
     private File file;
     private String uuid;
     private Socket fileTransferSocket;
+
 
     public FileTransfer(String sender, String receiver, File file) {
         this.sender = sender;
@@ -29,12 +31,11 @@ public class FileTransfer {
     }
 
 
-
     public void initiateFileTransfer() {
         new Thread(() -> {
             try {
                 // Connect to the file transfer server
-                fileTransferSocket = new Socket( "127.0.0.1", 1338);
+                fileTransferSocket = new Socket("127.0.0.1", FILE_TRANSFER_PORT);
 
                 // Send the file content to the server
                 sendFileContent();
@@ -54,7 +55,7 @@ public class FileTransfer {
         try (FileInputStream fileInputStream = new FileInputStream(file);
              OutputStream outputStream = fileTransferSocket.getOutputStream()) {
 
-            // Include sender/receiver indicator, UUID, and checksum in the file content
+            // Include sender/receiver indicator, UUID, file extension and checksum in the file content
             outputStream.write('S');
             outputStream.write(uuid.getBytes());
             String fileExtension = Optional.of(filePath)
@@ -64,11 +65,7 @@ public class FileTransfer {
                 fileExtension = "txt";
             }
             outputStream.write(fileExtension.getBytes());
-            System.out.println("UUID:" + uuid);
-            System.out.println("File ext:" + fileExtension);
             String checksum = calculateMD5Checksum(file);
-            System.out.println("Checksum: " + checksum);
-            System.out.println("Checksum length: " + checksum.length());
             outputStream.write(checksum.getBytes());
 
             long bytesTransferred = fileInputStream.transferTo(fileTransferSocket.getOutputStream());
@@ -81,7 +78,6 @@ public class FileTransfer {
     }
 
     public static String calculateMD5Checksum(File file) throws IOException {
-        // TODO use a way to generate a checksum using the FileStream
         try (FileInputStream fis = new FileInputStream(file); FileChannel channel = fis.getChannel()) {
             MessageDigest md = MessageDigest.getInstance("MD5");
             ByteBuffer buffer = ByteBuffer.allocate(8192);
@@ -109,24 +105,8 @@ public class FileTransfer {
         this.sender = sender;
     }
 
-    public String getReceiver() {
-        return receiver;
-    }
-
-    public void setReceiver(String receiver) {
-        this.receiver = receiver;
-    }
-
     public File getFile() {
         return file;
-    }
-
-    public void setFile(File file) {
-        this.file = file;
-    }
-
-    public String getUuid() {
-        return uuid;
     }
 
     public void setUuid(String uuid) {
@@ -142,4 +122,5 @@ public class FileTransfer {
                 ", uuid='" + uuid + '\'' +
                 '}';
     }
+
 }
